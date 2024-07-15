@@ -1,0 +1,56 @@
+
+# vim-bujo Vader test file
+
+Execute (Starting vim-bujo test suite): 
+
+Include (Initialise test suite): setup/init.vader
+
+Include: unit/format_filename.vader
+
+Include: unit/mkdir_if_needed.vader
+
+Include: unit/list_append_entry.vader
+
+Include: unit/list_insert_entry.vader
+
+
+Execute (Initialise Index using `:Index`): 
+  :Index
+  :q
+
+Execute (Create tasks on an existing journal): 
+  :Task 1st test task
+  :Task 2nd test task
+  :Task 3rd test task
+  :Task 4th test task
+
+Execute (Create tasks on an existing journal): 
+  :Event 1st test event
+  :Event 2nd test event
+  :Event 3rd test event
+  :Event 4th test event
+
+Execute (Create tasks on an existing journal): 
+  :Note 1st test note
+  :Note 2nd test note
+  :Note 3rd test note
+  :Note 4th test note
+
+Execute (Create tasks on an existing journal): 
+  :Collection 1st test collection
+  :Collection 2nd test collection
+  :Collection 3rd test collection
+  :Collection 4th test collection
+  
+Execute (Open Logs):
+  " TODO - When replacing existing windows is implemented
+  "      - Add check to make sure window is replaced correctly (requires different setups i.e. one with vsplit, one with hsplit, multi of each etc.)
+  :Today
+  :q
+  :Backlog
+  :q
+  :Monthly
+  :q
+  :Future
+  :q
+

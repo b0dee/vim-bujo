@@ -1,0 +1,96 @@
+# Setup tests
+
+Execute (Set variables for test execution):
+  let g:bujo_journal_default_name = "Vader"
+  let g:bujo_vader_testing = v:true
+  let g:bujo_vader_mkdir_choice = 1
+
+  let g:task_header = Vader_GetInternalVariable('bujo_header_entries')["task"]["header"]
+  let g:task_list_char = Vader_GetInternalVariable('bujo_header_entries')["task"]["list_char"] 
+  let g:note_header = Vader_GetInternalVariable('bujo_header_entries')["note"]["header"]
+  let g:note_list_char = Vader_GetInternalVariable('bujo_header_entries')["note"]["list_char"] 
+  let g:event_header = Vader_GetInternalVariable('bujo_header_entries')["event"]["header"]
+  let g:event_list_char = Vader_GetInternalVariable('bujo_header_entries')["event"]["list_char"] 
+
+  function! InitMissingHeaderListA()
+    return [
+    \ g:bujo_journal_default_name,
+    \ "",
+    \ g:task_header,
+    \ g:task_list_char . " " . "Pre-existing test entry",
+    \ g:task_list_char . " ",
+    \ "",
+    \ g:note_header,
+    \ (g:note_list_char == "" ? "" : g:note_list_char . " ")  . "Pre-existing test entry",
+    \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
+    \ "",
+    \ ]
+  endfunction
+  function! InitMissingHeaderListB()
+    return [
+    \ g:bujo_journal_default_name,
+    \ "",
+    \ g:event_header,
+    \ g:event_list_char . " " . "Pre-existing test entry",
+    \ g:event_list_char . " ",
+    \ "",
+    \ g:note_header,
+    \ (g:note_list_char == "" ? "" : g:note_list_char . " ")  . "Pre-existing test entry",
+    \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
+    \ "",
+    \ ]
+  endfunction
+  function! InitEmptyListNoHeaders()
+    return [
+    \ g:bujo_journal_default_name,
+    \ "",
+    \ ]
+  endfunction
+  function! InitPopulatedList()
+    return [
+    \ g:bujo_journal_default_name,
+  \ "",
+  \ g:event_header,
+  \ g:event_list_char . " " . "Pre-existing test entry",
+  \ g:event_list_char . " ",
+  \ "",
+  \ g:task_header,
+  \ g:task_list_char . " " . "Pre-existing test entry",
+  \ g:task_list_char . " ",
+  \ "",
+  \ g:note_header,
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " ") .  "Pre-existing test entry",
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
+  \ "",
+  \ ]
+  endfunction
+  function! InitEmptyList()
+    return [
+    \ g:bujo_journal_default_name,
+    \ "",
+    \ g:event_header,
+    \ g:event_list_char . " ",
+    \ "",
+    \ g:task_header,
+    \ g:task_list_char . " ",
+    \ "",
+    \ g:note_header,
+    \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
+    \ "",
+    \ ]
+  endfunction
+
+Execute (Creating helper functions):
+  let seed = srand(localtime())
+  function! RandString(len, sep = "")
+    for i in range(len - 1)
+     let result = nr2char((rand(seed) % 95) + 32) . a:sep
+    endfor
+    return result
+  endfunction
+
+Include (Remove any existing test journals): setup/teardown.vader
+
+
+
+

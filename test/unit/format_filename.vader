@@ -1,0 +1,35 @@
+Execute (Starting Unit: format_filename):
+
+Execute (- Mkdir base case (no changes needed)):
+  AssertEqual "vader.md", bujo#Vader_FormatFilename("vader.md")
+
+Execute (- Mkdir convert capitals to lower case):
+  AssertEqual "vader.md", bujo#Vader_FormatFilename("VADER.md")
+
+Execute (- Mkdir replace spaces with underscores):
+  AssertEqual "vader_spaces.md", bujo#Vader_FormatFilename("vader spaces.md")
+
+Execute (- Mkdir convert capitals and replace spaces):
+  AssertEqual "vader_spaces_and_capitals.md", bujo#Vader_FormatFilename("vader spaces and CAPITALS.md")
+
+Execute (- Mkdir replace special characters):
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special!.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special".md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special£.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special$.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special%.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special^.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special&.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special*.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special;.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special:.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special''.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special>.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special<.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special\.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special/.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special|.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special,.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special!"£$%^&*;:''><\/|,.md')
+  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special!"$£%&^*:;''<>/\,|.md')
+

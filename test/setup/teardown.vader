@@ -1,0 +1,11 @@
+Execute (Removing any existing tests journals): 
+  let test_journals = readdir(expand(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f =~ "vader"})
+  for journal in test_journals
+    Log "Found journal `" . journal . "`. Removing."
+    let journal_path = expand(g:bujo_path) . "/" . journal
+    call delete(journal_path, "rf")
+  endfor
+  let test_journals = readdir(expand(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f =~ "vader"})
+  AssertEqual [], test_journals, "Successfully removed test journal entries"
+  
+

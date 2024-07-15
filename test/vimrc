@@ -1,0 +1,10 @@
+call plug#begin()
+Plug 'junegunn/vader.vim'
+call plug#end()
+filetype off
+let &runtimepath .= ','.expand('<sfile>:p:h:h')
+filetype plugin indent on
+syntax enable
+set nomore
+set noswapfile
+set viminfo=

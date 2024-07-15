@@ -1,0 +1,208 @@
+Execute (Starting Unit: list_append_entry):
+
+Execute (- Append with no existing entries):
+  let vader_test_entry = "Vader Test Entry"
+
+  let list_after_event = [
+  \ g:bujo_journal_default_name,
+  \ "",
+  \ g:event_header,
+  \ g:event_list_char . " " . vader_test_entry,
+  \ g:event_list_char . " ",
+  \ "",
+  \ g:task_header,
+  \ g:task_list_char . " ",
+  \ "",
+  \ g:note_header,
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
+  \ "",
+  \ ]
+
+  let list_after_task = [
+  \ g:bujo_journal_default_name,
+  \ "",
+  \ g:event_header,
+  \ g:event_list_char . " ",
+  \ "",
+  \ g:task_header,
+  \ g:task_list_char . " " . vader_test_entry,
+  \ g:task_list_char . " ",
+  \ "",
+  \ g:note_header,
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
+  \ "",
+  \ ]
+
+  let list_after_note = [
+  \ g:bujo_journal_default_name,
+  \ "",
+  \ g:event_header,
+  \ g:event_list_char . " ",
+  \ "",
+  \ g:task_header,
+  \ g:task_list_char . " ",
+  \ "",
+  \ g:note_header,
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " ") . vader_test_entry,
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
+  \ "",
+  \ ]
+  
+  AssertEqual list_after_event, bujo#Vader_ListAppendEntry(InitEmptyList(), g:event_header, g:event_list_char, vader_test_entry), "Failed appending event.\nExpected:\n['" . join(list_after_event, "', '") . "']\nbut got:\n['" . join(Vader_ListAppendEntry(InitEmptyList(), g:event_header, g:event_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_after_task, bujo#Vader_ListAppendEntry(InitEmptyList(), g:task_header, g:task_list_char, vader_test_entry), "Failed appending task.\nExpected:\n['" . join(list_after_task, "', '") . "']\nbut got:\n['" . join(Vader_ListAppendEntry(InitEmptyList(), g:task_header, g:task_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_after_note, bujo#Vader_ListAppendEntry(InitEmptyList(), g:note_header, g:note_list_char, vader_test_entry), "Failed appending note.\nExpected:\n['" . join(list_after_note, "', '") . "']\nbut got:\n['" . join(Vader_ListAppendEntry(InitEmptyList(), g:note_header, g:note_list_char, vader_test_entry), "', '") . "']"
+
+
+Execute (- Append with existing entries):
+  let vader_test_entry = "Vader Test Entry"
+
+  let list_after_event = [
+  \ g:bujo_journal_default_name,
+  \ "",
+  \ g:event_header,
+  \ g:event_list_char . " " . "Pre-existing test entry",
+  \ g:event_list_char . " " . vader_test_entry,
+  \ g:event_list_char . " ",
+  \ "",
+  \ g:task_header,
+  \ g:task_list_char . " " . "Pre-existing test entry",
+  \ g:task_list_char . " ",
+  \ "",
+  \ g:note_header,
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " ") .  "Pre-existing test entry",
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
+  \ "",
+  \ ]
+
+  let list_after_task = [
+  \ g:bujo_journal_default_name,
+  \ "",
+  \ g:event_header,
+  \ g:event_list_char . " " . "Pre-existing test entry",
+  \ g:event_list_char . " ",
+  \ "",
+  \ g:task_header,
+  \ g:task_list_char . " " . "Pre-existing test entry",
+  \ g:task_list_char . " " . vader_test_entry,
+  \ g:task_list_char . " ",
+  \ "",
+  \ g:note_header,
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " ") .  "Pre-existing test entry",
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
+  \ "",
+  \ ]
+
+  let list_after_note = [
+  \ g:bujo_journal_default_name,
+  \ "",
+  \ g:event_header,
+  \ g:event_list_char . " " . "Pre-existing test entry",
+  \ g:event_list_char . " ",
+  \ "",
+  \ g:task_header,
+  \ g:task_list_char . " " . "Pre-existing test entry",
+  \ g:task_list_char . " ",
+  \ "",
+  \ g:note_header,
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " ") . "Pre-existing test entry",
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " ") . vader_test_entry,
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
+  \ "",
+  \ ]
+
+  AssertEqual list_after_event, bujo#Vader_ListAppendEntry(InitPopulatedList(), g:event_header, g:event_list_char, vader_test_entry), "Failed appending event.\nExpected:\n['" . join(list_after_event, "', '") . "']\nbut got:\n['" . join(Vader_ListAppendEntry(InitPopulatedList(), g:event_header, g:event_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_after_task, bujo#Vader_ListAppendEntry(InitPopulatedList(), g:task_header, g:task_list_char, vader_test_entry), "Failed appending task.\nExpected:\n['" . join(list_after_task, "', '") . "']\nbut got:\n['" . join(Vader_ListAppendEntry(InitPopulatedList(), g:task_header, g:task_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_after_note, bujo#Vader_ListAppendEntry(InitPopulatedList(), g:note_header, g:note_list_char, vader_test_entry), "Failed appending note.\nExpected:\n['" . join(list_after_note, "', '") . "']\nbut got:\n['" . join(Vader_ListAppendEntry(InitPopulatedList(), g:note_header, g:note_list_char, vader_test_entry), "', '") . "']"
+
+
+Execute (- Append with entry type header missing):
+  let vader_test_entry = "Vader Test Entry"
+  let list_a_after_event = [
+  \ g:bujo_journal_default_name,
+  \ "",
+  \ g:event_header,
+  \ g:event_list_char . " " . vader_test_entry,
+  \ g:event_list_char . " ",
+  \ "",
+  \ g:task_header,
+  \ g:task_list_char . " " . "Pre-existing test entry",
+  \ g:task_list_char . " ",
+  \ "",
+  \ g:note_header,
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " ")  . "Pre-existing test entry",
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
+  \ "",
+  \ ]
+
+  let list_b_after_event = [
+  \ g:bujo_journal_default_name,
+  \ "",
+  \ g:event_header,
+  \ g:event_list_char . " " . "Pre-existing test entry",
+  \ g:event_list_char . " " . vader_test_entry,
+  \ g:event_list_char . " ",
+  \ "",
+  \ g:note_header,
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " ")  . "Pre-existing test entry",
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
+  \ "",
+  \ ]
+
+  let list_a_after_task = [
+  \ g:bujo_journal_default_name,
+  \ "",
+  \ g:task_header,
+  \ g:task_list_char . " " . "Pre-existing test entry",
+  \ g:task_list_char . " " . vader_test_entry,
+  \ g:task_list_char . " ",
+  \ "",
+  \ g:note_header,
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " ")  . "Pre-existing test entry",
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
+  \ "",
+  \ ]
+
+  let list_b_after_task = [
+  \ g:bujo_journal_default_name,
+  \ "",
+  \ g:task_header,
+  \ g:task_list_char . " " . vader_test_entry,
+  \ g:task_list_char . " ",
+  \ "",
+  \ g:event_header,
+  \ g:event_list_char . " " . "Pre-existing test entry",
+  \ g:event_list_char . " ",
+  \ "",
+  \ g:note_header,
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " ")  . "Pre-existing test entry",
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
+  \ "",
+  \ ]
+
+  AssertEqual list_a_after_event, bujo#Vader_ListAppendEntry(InitMissingHeaderListA(), g:event_header, g:event_list_char, vader_test_entry), "Failed appending event to list A.\nExpected:\n['" . join(list_a_after_event, "', '") . "']\nbut got:\n['" . join(Vader_ListAppendEntry(InitMissingHeaderListA(), g:event_header, g:event_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_b_after_event, bujo#Vader_ListAppendEntry(InitMissingHeaderListB(), g:event_header, g:event_list_char, vader_test_entry), "Failed appending event to list B.\nExpected:\n['" . join(list_b_after_event, "', '") . "']\nbut got:\n['" . join(Vader_ListAppendEntry(InitMissingHeaderListB(), g:event_header, g:event_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_a_after_task, bujo#Vader_ListAppendEntry(InitMissingHeaderListA(), g:task_header, g:task_list_char, vader_test_entry), "Failed appending task to list A.\nExpected:\n['" . join(list_a_after_task, "', '") . "']\nbut got:\n['" . join(Vader_ListAppendEntry(InitMissingHeaderListA(), g:task_header, g:task_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_b_after_task, bujo#Vader_ListAppendEntry(InitMissingHeaderListB(), g:task_header, g:task_list_char, vader_test_entry), "Failed appending task to list B.\nExpected:\n['" . join(list_b_after_task, "', '") . "']\nbut got:\n['" . join(Vader_ListAppendEntry(InitMissingHeaderListB(), g:task_header, g:task_list_char, vader_test_entry), "', '") . "']"
+
+Execute (- Append with all headers missing):
+  let vader_test_entry = "Vader Test Entry"
+
+  let list_after_event = [
+  \ g:bujo_journal_default_name,
+  \ "",
+  \ g:event_header,
+  \ g:event_list_char . " " . vader_test_entry,
+  \ g:event_list_char . " ",
+  \ "",
+  \ ]
+
+  let list_after_task = [
+  \ g:bujo_journal_default_name,
+  \ "",
+  \ g:task_header,
+  \ g:task_list_char . " " . vader_test_entry,
+  \ g:task_list_char . " ",
+  \ "",
+  \ ]
+  AssertEqual list_after_event, bujo#Vader_ListAppendEntry(InitEmptyListNoHeaders(), g:event_header, g:event_list_char, vader_test_entry), "Failed appending event.\nExpected:\n['" . join(list_after_event, "', '") . "']\nbut got:\n['" . join(Vader_ListAppendEntry(InitEmptyListNoHeaders(), g:event_header, g:event_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_after_task, bujo#Vader_ListAppendEntry(InitEmptyListNoHeaders(), g:task_header, g:task_list_char, vader_test_entry), "Failed appending task.\nExpected:\n['" . join(list_after_task, "', '") . "']\nbut got:\n['" . join(Vader_ListAppendEntry(InitEmptyListNoHeaders(), g:task_header, g:task_list_char, vader_test_entry), "', '") . "']"
