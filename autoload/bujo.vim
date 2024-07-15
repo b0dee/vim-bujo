@@ -272,51 +272,6 @@ function! s:init_journal_index(journal)
   call writefile(l:content, l:journal_index)
 endfunction
 
-" function! s:open_or_replace_window(is_journal = v:false)
-"   let l:current_winnr = winnr()
-"   let l: = g:bujo_split_right ? "$" : "1"
-" 
-"   
-"   exe l:current_winnr . "wincmd w"
-" 
-"   exe l:current_winnr . "wincmd w"
-"   let l:winsize = l:is_journal ? g:bujo_index_winsize : g:bujo_daily_winsize
-"   return (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((l:winsize > 0)? (l:winsize*winwidth(0))/100 : -l:winsize) "new" 
-" endfunction
-
-" Paramaters: openJournal: bool, vaargs - each argument is joined in a string
-" to create the journal name
-" Description: Open the index file for a journal or index file of journals
-" Notes: Additional arguments are appended to the 'journal' argument with
-" spaces between
-function! bujo#OpenIndex(open_journal, ...)
-  let l:journal = a:0 == 0 ? g:bujo_journal_default_name : join(a:000, " ")
-  let l:journal_dir = expand(g:bujo_path) . s:format_filename(l:journal)
-  let l:journal_index = expand(l:journal_dir . "/index.md")
-  
-  " Check to see if the journal exists
-  if !a:open_journal
-    if s:mkdir_if_needed(l:journal) | return | endif
-  endif
-
-  let l:cmd = (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_index_winsize > 0)? (g:bujo_index_winsize*winwidth(0))/100 : -g:bujo_index_winsize) . "new" 
-  if a:open_journal
-    execute l:cmd 
-    setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
-    let l:content = ["# Journal Index", ""]
-    for entry in readdir(expand(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f !~ "^[.]"})
-      call add(l:content, "- [" . substitute(entry, "\\<\\([a-z]\\)", "\\bujo#U\\1", "g") . "]( " . entry . "/index.md" . " )")
-    endfor
-    call append(0, l:content)
-    setlocal readonly nomodifiable
-  else
-    let l:journal_index = tolower(expand(g:bujo_path) . l:journal . "/index.md")
-    call s:init_journal_index(l:journal)
-    execute l:cmd 
-    execute "edit " . fnameescape(l:journal_index)
-  endif
-endfunction
-
 function! s:init_daily(journal)
   let l:formatted_daily_header = s:format_header(g:bujo_daily_header, a:journal) 
   let l:journal_dir = expand(g:bujo_path) . s:format_filename(a:journal) 
@@ -354,38 +309,6 @@ function! s:init_daily(journal)
 
   " Write output to file
   call writefile(l:content, l:daily_log)
-endfunction
-
-function! s:list_insert_entry(list, type_header, type_list_char, entry, stop_pattern = v:null)
-  let l:index = 0
-  let l:list_char = a:type_list_char . (a:type_list_char == "" ? "" : " " )
-  for line in a:list
-    let l:index += 1
-    if a:stop_pattern isnot v:null && line ==# a:stop_pattern | break | endif
-    if line ==# a:type_header
-      call insert(a:list, l:list_char . a:entry, l:index)
-      return a:list
-    endif
-  endfor
-
-  " If we reach here, we've failed to locate the header
-  " The only 'safe' way I can conceive to add this in is 
-  " to locate todays header and insert it 2 lines below 
-  " (leaving blank line below header)
-  call insert(a:list, a:type_header, 2)
-  call insert(a:list, l:list_char . a:entry, 3)
-  call insert(a:list, l:list_char, 4)
-  call insert(a:list, "", 5)
-  return a:list
-endfunction
-
-function! bujo#OpenDaily(...)
-  let l:journal = a:0 == 0 ? g:bujo_journal_default_name : join(a:000, " ")
-  let l:daily_log = expand(g:bujo_path . l:journal . "/". s:format_filename(s:bujo_daily_filename))
-  call s:init_daily(l:journal)
-  execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_daily_winsize > 1)? (g:bujo_daily_winsize*winwidth(0))/100 : -g:bujo_daily_winsize) "new" 
-  execute  "edit " . fnameescape(l:daily_log)
- 
 endfunction
 
 function! s:list_insert_entry(list, type_header, type_list_char, entry, stop_pattern = v:null)
@@ -439,6 +362,60 @@ function! s:list_append_entry(list, type_header, type_list_char, entry)
   return a:list
 endfunction
 
+
+" function! s:open_or_replace_window(is_journal = v:false)
+"   let l:current_winnr = winnr()
+"   let l: = g:bujo_split_right ? "$" : "1"
+" 
+"   
+"   exe l:current_winnr . "wincmd w"
+" 
+"   exe l:current_winnr . "wincmd w"
+"   let l:winsize = l:is_journal ? g:bujo_index_winsize : g:bujo_daily_winsize
+"   return (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((l:winsize > 0)? (l:winsize*winwidth(0))/100 : -l:winsize) "new" 
+" endfunction
+
+" Paramaters: openJournal: bool, vaargs - each argument is joined in a string
+" to create the journal name
+" Description: Open the index file for a journal or index file of journals
+" Notes: Additional arguments are appended to the 'journal' argument with
+" spaces between
+function! bujo#OpenIndex(open_journal, ...)
+  let l:journal = a:0 == 0 ? g:bujo_journal_default_name : join(a:000, " ")
+  let l:journal_dir = expand(g:bujo_path) . s:format_filename(l:journal)
+  let l:journal_index = expand(l:journal_dir . "/index.md")
+  
+  " Check to see if the journal exists
+  if !a:open_journal
+    if s:mkdir_if_needed(l:journal) | return | endif
+  endif
+
+  let l:cmd = (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_index_winsize > 0)? (g:bujo_index_winsize*winwidth(0))/100 : -g:bujo_index_winsize) . "new" 
+  if a:open_journal
+    execute l:cmd 
+    setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
+    let l:content = ["# Journal Index", ""]
+    for entry in readdir(expand(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f !~ "^[.]"})
+      call add(l:content, "- [" . substitute(entry, "\\<\\([a-z]\\)", "\\bujo#U\\1", "g") . "]( " . entry . "/index.md" . " )")
+    endfor
+    call append(0, l:content)
+    setlocal readonly nomodifiable
+  else
+    let l:journal_index = tolower(expand(g:bujo_path) . l:journal . "/index.md")
+    call s:init_journal_index(l:journal)
+    execute l:cmd 
+    execute "edit " . fnameescape(l:journal_index)
+  endif
+endfunction
+
+function! bujo#OpenDaily(...)
+  let l:journal = a:0 == 0 ? g:bujo_journal_default_name : join(a:000, " ")
+  let l:daily_log = expand(g:bujo_path . l:journal . "/". s:format_filename(s:bujo_daily_filename))
+  call s:init_daily(l:journal)
+  execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_daily_winsize > 1)? (g:bujo_daily_winsize*winwidth(0))/100 : -g:bujo_daily_winsize) "new" 
+  execute  "edit " . fnameescape(l:daily_log)
+ 
+endfunction
 " TODO - Handle displaying urgent tasks
 function! bujo#CreateEntry(type, is_urgent, ...)
   let l:entry = substitute(join(a:000, " "), "\\(^[a-z]\\)", "\\U\\1", "g") . (a:type ==# s:BUJO_NOTE ? "\r\n": "")
@@ -629,7 +606,6 @@ function! bujo#OpenMonthly(...)
     let l:content = readfile(l:monthly_log)
     call writefile(s:list_append_entry(l:content, s:bujo_header_entries[l:type]["header"], s:bujo_header_entries[l:type]["list_char"], l:entry), l:monthly_log)
   endif
-
 endfunction
 
 " Global wrappers made so Vader can run unit tests
