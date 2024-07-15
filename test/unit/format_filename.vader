@@ -12,6 +12,12 @@ Execute (- Mkdir replace spaces with underscores):
 Execute (- Mkdir convert capitals and replace spaces):
   AssertEqual "vader_spaces_and_capitals.md", bujo#Vader_FormatFilename("vader spaces and CAPITALS.md")
 
+Execute (- Mkdir format dates):
+  AssertEqual "vader_" . strftime("%Y") . ".md", bujo#Vader_FormatFilename('vader_%Y.md')
+  AssertEqual "vader_" . strftime("%m") . ".md", bujo#Vader_FormatFilename('vader_%m.md')
+  AssertEqual "vader_" . strftime("%d") . ".md", bujo#Vader_FormatFilename('vader_%d.md')
+  AssertEqual "vader_" . strftime("%Y-%m-%d") . ".md", bujo#Vader_FormatFilename('vader_%Y-%m-%d.md')
+
 Execute (- Mkdir replace special characters):
   AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special!.md')
   AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special".md')

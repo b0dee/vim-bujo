@@ -5,12 +5,12 @@ Execute (Set variables for test execution):
   let g:bujo_vader_testing = v:true
   let g:bujo_vader_mkdir_choice = 1
 
-  let g:task_header = Vader_GetInternalVariable('bujo_header_entries')["task"]["header"]
-  let g:task_list_char = Vader_GetInternalVariable('bujo_header_entries')["task"]["list_char"] 
-  let g:note_header = Vader_GetInternalVariable('bujo_header_entries')["note"]["header"]
-  let g:note_list_char = Vader_GetInternalVariable('bujo_header_entries')["note"]["list_char"] 
-  let g:event_header = Vader_GetInternalVariable('bujo_header_entries')["event"]["header"]
-  let g:event_list_char = Vader_GetInternalVariable('bujo_header_entries')["event"]["list_char"] 
+  let g:task_header = bujo#GetInternalVariable('bujo_header_entries')["task"]["header"]
+  let g:task_list_char = bujo#GetInternalVariable('bujo_header_entries')["task"]["list_char"] 
+  let g:note_header = bujo#GetInternalVariable('bujo_header_entries')["note"]["header"]
+  let g:note_list_char = bujo#GetInternalVariable('bujo_header_entries')["note"]["list_char"] 
+  let g:event_header = bujo#GetInternalVariable('bujo_header_entries')["event"]["header"]
+  let g:event_list_char = bujo#GetInternalVariable('bujo_header_entries')["event"]["list_char"] 
 
   function! InitMissingHeaderListA()
     return [
