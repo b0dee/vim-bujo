@@ -277,7 +277,7 @@ function! s:mkdir_if_needed(journal = g:bujo_journal_default_name) abort
   return v:false
 endfunction
 
-function! s:init_journal_index(journal)
+function! s:init_journal_index(journal) abort
   let l:journal_dir = expand(g:bujo_path) . s:format_filename(a:journal)
   let l:journal_index = l:journal_dir . "/index.md"
   " We have already initialised index 
@@ -292,7 +292,7 @@ function! s:init_journal_index(journal)
   call writefile(l:content, l:journal_index)
 endfunction
 
-function! s:init_daily(journal)
+function! s:init_daily(journal) abort
   let l:formatted_daily_header = s:format_header(g:bujo_daily_header, a:journal) 
   let l:journal_dir = expand(g:bujo_path) . s:format_filename(a:journal) 
   let l:daily_log = l:journal_dir . "/". s:format_filename(s:bujo_daily_filename)
@@ -331,7 +331,7 @@ function! s:init_daily(journal)
   call writefile(l:content, l:daily_log)
 endfunction
 
-function! s:list_insert_entry(list, type_header, type_list_char, entry, stop_pattern = v:null)
+function! s:list_insert_entry(list, type_header, type_list_char, entry, stop_pattern = v:null) abort
   let l:index = 1
   let l:list_char = a:type_list_char . (a:type_list_char == "" ? "" : " " )
   for line in a:list
@@ -354,7 +354,7 @@ function! s:list_insert_entry(list, type_header, type_list_char, entry, stop_pat
   return a:list
 endfunction
 
-function! s:list_append_entry(list, type_header, type_list_char, entry) 
+function! s:list_append_entry(list, type_header, type_list_char, entry)  abort
   let l:index = 1
   let l:list_char = a:type_list_char . (a:type_list_char == "" ? "" : " " )
   for line in a:list
@@ -400,23 +400,23 @@ endfunction
 " Description: Open the index file for a journal or index file of journals
 " Notes: Additional arguments are appended to the 'journal' argument with
 " spaces between
-function! bujo#OpenIndex(open_journal, ...)
+function! bujo#OpenIndex(list_journals, ...) abort
   let l:journal = a:0 == 0 ? g:bujo_journal_default_name : join(a:000, " ")
   let l:journal_dir = expand(g:bujo_path) . s:format_filename(l:journal)
   let l:journal_index = expand(l:journal_dir . "/index.md")
   
   " Check to see if the journal exists
-  if !a:open_journal
+  if !a:list_journals
     if s:mkdir_if_needed(l:journal) | return | endif
   endif
 
   let l:cmd = (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_index_winsize > 0)? (g:bujo_index_winsize*winwidth(0))/100 : -g:bujo_index_winsize) . "new" 
-  if a:open_journal
+  if a:list_journals
     execute l:cmd 
     setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
     let l:content = ["# Journal Index", ""]
     for entry in readdir(expand(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f !~ "^[.]"})
-      call add(l:content, "- [" . substitute(entry, "\\<\\([a-z]\\)", "\\bujo#U\\1", "g") . "]( " . entry . "/index.md" . " )")
+      call add(l:content, "- [" . substitute(s:format_initial_caps(entry). "]( " . entry . "/index.md" . " )")
     endfor
     call append(0, l:content)
     setlocal readonly nomodifiable
@@ -428,7 +428,7 @@ function! bujo#OpenIndex(open_journal, ...)
   endif
 endfunction
 
-function! bujo#OpenDaily(...)
+function! bujo#OpenDaily(...) abort
   let l:journal = a:0 == 0 ? g:bujo_journal_default_name : join(a:000, " ")
   let l:daily_log = expand(g:bujo_path . l:journal . "/". s:format_filename(s:bujo_daily_filename))
   call s:init_daily(l:journal)
@@ -437,17 +437,57 @@ function! bujo#OpenDaily(...)
  
 endfunction
 " TODO - Handle displaying urgent tasks
-function! bujo#CreateEntry(type, is_urgent, ...)
-  let l:entry = substitute(join(a:000, " "), "\\(^[a-z]\\)", "\\U\\1", "g") . (a:type ==# s:BUJO_NOTE ? "\r\n": "")
-  let l:journal_dir = expand(g:bujo_path) . s:format_filename(g:bujo_journal_default_name)
-  let l:daily_log = l:journal_dir . "/". s:format_filename(s:bujo_daily_filename)
-  call s:init_daily(g:bujo_journal_default_name)
+function! bujo#CreateEntry(type, is_urgent, ...) abort
+	if a:0 == 0 
+		echoerr "CreateEntry requires at least 1 additional argument for the entry value."
+		return
+	endif
+	let l:journal = g:bujo_journal_default_name
+	let l:filename = s:format_filename(s:bujo_daily_filename)
+	let l:entry = join(a:000, " ")
+	try 
+		if s:is_journal(a:1) 
+			if a:0 == 1
+				echoerr "CreateEntry requires at least 1 additional argument (entry) when specifying a journal"
+				return
+			endif
+
+			let l:journal = s:format_filename(a:1)
+			if s:is_collection(a:1, a:2)
+				if a:0 == 2
+					echoerr "CreateEntry requires at least 1 additional argument (entry) when specifying a journal and collection"
+					return
+				endif
+
+				let l:filename = s:format_filename(a:2 . "md")
+				let l:entry = join(a:000[2:-1], " ")
+
+			else
+				let l:entry =  join(a:000[1:-1], " ")
+			endif
+		elseif is_collection(a:1)
+			let l:entry =  join(a:000[1:-1], " ")
+		endif
+	catch
+		echoerr "Aborting entry creation."
+		return
+	endtry
+
+	" Note entries do not have a list character. 
+	" To ensure we generate markdown that formats correctly insert
+	" newline after entry
+	let l:entry = l:entry . (a:type ==# s:BUJO_NOTE ? "\n": "")
+
+  let l:journal_dir = s:format_path(expand(g:bujo_path), s:format_filename(l:journal))
+  let l:daily_log = s:format_path(l:journal_dir, l:filename)
+
+  call s:init_daily(l:journal)
   let l:content = readfile(l:daily_log)
   call writefile(s:list_append_entry(l:content, s:bujo_header_entries[a:type]["header"], s:bujo_header_entries[a:type]["list_char"], l:entry), l:daily_log)
 endfunction
 
 " bujo#This needs to handle for month selected (required)
-function! bujo#OpenFuture(...)
+function! bujo#OpenFuture(...) abort
   let l:journal_dir = expand(g:bujo_path) . s:format_filename(g:bujo_journal_default_name)
   let l:future_log = l:journal_dir . "/" . s:format_filename(s:bujo_future_filename) 
   if s:mkdir_if_needed(g:bujo_journal_default_name) | return | endif
@@ -528,7 +568,7 @@ function! bujo#CreateCollection(...)
 
 endfunction
 
-function! bujo#OpenBacklog(...)
+function! bujo#OpenBacklog(...) abort
   let l:journal_dir = expand(g:bujo_path) . s:format_filename(g:bujo_journal_default_name)
   let l:backlog = l:journal_dir . "/" . s:format_filename(s:bujo_backlog_filename)
   if s:mkdir_if_needed(g:bujo_journal_default_name) | return | endif
@@ -558,7 +598,7 @@ function! bujo#OpenBacklog(...)
   endif
 endfunction
 
-function! bujo#OpenMonthly(...)
+function! bujo#OpenMonthly(...) abort
   if a:0 > 0 && a:0 < 2
     echoerr "Monthly command requires at least 3 arguments if providing any."
     return
@@ -629,15 +669,15 @@ function! bujo#OpenMonthly(...)
 endfunction
 
 " Global wrappers made so Vader can run unit tests
-function! bujo#Vader_FormatFilename(filename)
+function! bujo#Vader_FormatFilename(filename) abort
   return s:format_filename(a:filename)
 endfunction
 
-function! bujo#Vader_FormatHeader(header, journal = g:bujo_journal_default_name) 
+function! bujo#Vader_FormatHeader(header, journal = g:bujo_journal_default_name)  abort
   call s:format_header(a:header, a:journal) 
 endfunction
 
-function! bujo#Vader_MkdirIfNeeded(journal = v:null)
+function! bujo#Vader_MkdirIfNeeded(journal = v:null) abort
   if a:journal isnot v:null
     return s:mkdir_if_needed(a:journal)
   else
@@ -645,18 +685,26 @@ function! bujo#Vader_MkdirIfNeeded(journal = v:null)
   endif
 endfunction
 
-function! bujo#Vader_ListInsertEntry(list, type_header, type_list_char, entry, stop_pattern = v:null)
+function! bujo#Vader_ListInsertEntry(list, type_header, type_list_char, entry, stop_pattern = v:null) abort
   return s:list_insert_entry(a:list, a:type_header, a:type_list_char, a:entry, a:stop_pattern)
 endfunction
 
-function! bujo#Vader_ListAppendEntry(list, type_header, type_list_char, entry) 
+function! bujo#Vader_ListAppendEntry(list, type_header, type_list_char, entry)  abort
   return s:list_append_entry(a:list, a:type_header, a:type_list_char, a:entry) 
 endfunction
 
-function! bujo#Vader_GetJournalPath(journal = g:bujo_journal_default_name)
-  return tolower(expand(g:bujo_path). a:journal)
+function! bujo#Vader_GetJournalPath(journal = g:bujo_journal_default_name) abort
+  return s:format_path(expand(g:bujo_path), s:format_filename(a:journal))
 endfunction
 
-function! bujo#GetInternalVariable(var)
+function! bujo#Vader_IsJournal(journal)  abort
+	return s:is_journal(a:journal)
+endfunction
+
+function! bujo#Vader_IsCollection(journal, collection)  abort
+	return s:is_collection(a:journal, a:collection)
+endfunction
+
+function! bujo#GetInternalVariable(var) abort
   return get(s:, a:var, "Failed to find " . a:var . " in s:")
 endfunction
