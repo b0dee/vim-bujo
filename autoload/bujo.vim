@@ -39,7 +39,7 @@ endif
 
 
 " Daily Log vars
-let s:bujo_daily_filename = "daily_%Y-%m-%{#}.md"
+let s:bujo_daily_filename = s:BUJO_DAILY . "_%Y-%m-%{#}.md"
 if !exists('g:bujo_daily_winsize')
 	let g:bujo_daily_winsize = 50
 endif
@@ -108,7 +108,7 @@ if !exists('g:bujo_daily_include_event_header')
 endif
 
 " Future Log vars
-let s:bujo_future_filename = "future_%Y.md"
+let s:bujo_future_filename = s:BUJO_FUTURE . "_%Y.md"
 if !exists('g:bujo_future_header')
 	let g:bujo_future_header =  "# {journal} Future Log - %Y" 
 endif
@@ -120,7 +120,7 @@ if !exists('g:bujo_future_month_header')
 endif
 
 " Monthly Log vars
-let s:bujo_monthly_filename = "monthly_%Y_%m.md"
+let s:bujo_monthly_filename = s:BUJO_MONTHLY . "_%Y_%m.md"
 if !exists('g:bujo_monthly_header')
 	let g:bujo_monthly_header = "# %B %Y"
 endif
