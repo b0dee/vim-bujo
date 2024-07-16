@@ -12,10 +12,11 @@ Execute (- Using uppercase journal name):
     call delete(bujo#Vader_GetJournalPath("VADER_UPPERCASE"), "rf")
     Assert !isdirectory(bujo#Vader_GetJournalPath("VADER_UPPERCASE")), "Failed to delete test directory"
 
-" Uncomment when we've implemented the replacement logic
-" Execute (- Using special characters):
-"     AssertThrows call bujo#Vader_MkdirIfNeeded("VADER_$P£C!4L./#")
-"     Assert !isdirectory(bujo#Vader_GetJournalPath("VADER_$P£C!4L./#"))
+Execute (- Using special characters):
+    call bujo#Vader_MkdirIfNeeded('VADER_SPECIAL!"£$%^&*()\|,<>/?;''[]"/')
+    Assert isdirectory(bujo#Vader_GetJournalPath("VADER_SPECIAL"))
+    call delete(bujo#Vader_GetJournalPath("VADER_SPECIAL"), "rf")
+    Assert !isdirectory(bujo#Vader_GetJournalPath("VADER_SPECIAL")), "Failed to delete test directory"
     
 Execute (- Using space character):
     call bujo#Vader_MkdirIfNeeded("VADER SPACES")
@@ -23,3 +24,8 @@ Execute (- Using space character):
     call delete(bujo#Vader_GetJournalPath("VADER SPACES"), "rf")
     Assert !isdirectory(bujo#Vader_GetJournalPath("VADER SPACES")), "Failed to delete test directory"
     
+Execute (- Abort creation): 
+    let g:bujo_vader_mkdir_choice = 0
+    call bujo#Vader_MkdirIfNeeded("VADER THROWS")
+    let g:bujo_vader_mkdir_choice = 1
+    Assert !isdirectory(bujo#Vader_GetJournalPath("VADER THROWS")), "Created directory when it should have aborted"

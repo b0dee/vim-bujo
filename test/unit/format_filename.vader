@@ -1,24 +1,24 @@
 Execute (Starting Unit: format_filename):
 
-Execute (- Mkdir base case (no changes needed)):
+Execute (- format_filename base case (no changes needed)):
   AssertEqual "vader.md", bujo#Vader_FormatFilename("vader.md")
 
-Execute (- Mkdir convert capitals to lower case):
+Execute (- format_filename convert capitals to lower case):
   AssertEqual "vader.md", bujo#Vader_FormatFilename("VADER.md")
 
-Execute (- Mkdir replace spaces with underscores):
+Execute (- format_filename replace spaces with underscores):
   AssertEqual "vader_spaces.md", bujo#Vader_FormatFilename("vader spaces.md")
 
-Execute (- Mkdir convert capitals and replace spaces):
+Execute (- format_filename convert capitals and replace spaces):
   AssertEqual "vader_spaces_and_capitals.md", bujo#Vader_FormatFilename("vader spaces and CAPITALS.md")
 
-Execute (- Mkdir format dates):
+Execute (- format_filename format dates):
   AssertEqual "vader_" . strftime("%Y") . ".md", bujo#Vader_FormatFilename('vader_%Y.md')
   AssertEqual "vader_" . strftime("%m") . ".md", bujo#Vader_FormatFilename('vader_%m.md')
   AssertEqual "vader_" . strftime("%d") . ".md", bujo#Vader_FormatFilename('vader_%d.md')
   AssertEqual "vader_" . strftime("%Y-%m-%d") . ".md", bujo#Vader_FormatFilename('vader_%Y-%m-%d.md')
 
-Execute (- Mkdir replace special characters):
+Execute (- format_filename replace special characters):
   AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special!.md')
   AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special".md')
   AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special£.md')
@@ -39,3 +39,6 @@ Execute (- Mkdir replace special characters):
   AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special!"£$%^&*;:''><\/|,.md')
   AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special!"$£%&^*:;''<>/\,|.md')
 
+Execute (- TODO format_filename trim surrounding whitespace):
+  AssertEqual "vader", bujo#Vader_FormatFilename("vader ")
+  AssertEqual "vader.md", bujo#Vader_FormatFilename(" vader.md")
