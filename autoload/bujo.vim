@@ -225,28 +225,48 @@ let s:bujo_months = [
 
 
 
-function! s:format_filename(filename) 
+function! s:format_filename(filename)  abort
   return tolower(
       \ substitute(
         \ substitute(
           \ substitute(strftime(a:filename), " ", "_", "g"), 
         \ '{#}', ((strftime("%d") / 7) + 1), "g"),
-      \ '[!"£$%^&*;:''><\\\/|,]', "", "g"))
+      \ '[!"£$%^&*;:''><\\\/|,())?\[\]]', "", "g"))
 endfunction
 
-function! s:format_header(header, journal = g:bujo_journal_default_name) 
-  return strftime(substitute(a:header, "{journal}", substitute(a:journal, "\\<\\([a-z]\\)", "\\U\\1", "g"), "g"))
+function! s:format_initial_caps(string)
+	return substitute(a:string, '\<\([a-z]\)', '\U\1', "g")
+endfunction
+
+function! s:format_header(header, journal = g:bujo_journal_default_name)  abort
+  return strftime(substitute(a:header, "{journal}", s:format_initial_caps(a:journal), "g"))
+endfunction
+
+function! s:format_path(...) abort
+	if a:0 == 0 
+		echoerr "format_path requires at least 2 arguments"
+	endif
+	let l:path = ""
+	for step in a:000
+		if step[-1:-1] == "/" || step[-1:-1] == "\\" 
+			let l:path .= expand(step[0:-2])
+		else
+			let l:path .= "/" . (step) 
+		endif
+	endfor
+	return l:path
 endfunction
 
 " mkdir_if_needed
 " Returns true if user cancelled, false if already exists/created directory
-function! s:mkdir_if_needed(journal = g:bujo_journal_default_name)
-  let l:journal_dir = tolower(expand(g:bujo_path). a:journal)
+" TODO - See if we can remove the bool return from here and rely on abort...
+function! s:mkdir_if_needed(journal = g:bujo_journal_default_name) abort
+  let l:journal_dir = s:format_path(expand(g:bujo_path), s:format_filename(a:journal))
   if isdirectory(l:journal_dir)
     return v:false
 	endif
 
-  let l:journal_print_name = substitute(a:journal, "\\<\\([a-z]\\)", "\\U\\1", "g")
+  let l:journal_print_name = s:format_initial_caps(a:journal)
   let choice = g:bujo_vader_testing ? g:bujo_vader_mkdir_choice : confirm("bujo#Creating new journal `" . l:journal_print_name . "`. bujo#Continue Y/n (default: yes)?","&Yes\n&No")
   if l:choice != 1 
     echo "Aborting journal creation"
