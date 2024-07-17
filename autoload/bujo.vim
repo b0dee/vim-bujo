@@ -294,7 +294,7 @@ function! s:mkdir_if_needed(journal) abort
   let l:journal_print_name = s:format_initial_case(a:journal)
   let choice = g:bujo_vader_testing ? g:bujo_vader_mkdir_choice : confirm("Creating new journal `" . l:journal_print_name . "`. Continue Y/n (default: yes)?","&Yes\n&No")
   if l:choice != 1 
-    echo "Aborting journal creation"
+    echon "Aborting journal creation"
     return v:true
   endif
 
