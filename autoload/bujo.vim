@@ -436,18 +436,15 @@ endfunction
 function! s:is_collection(journal, collection)  abort
 	try
 		let l:collections = readdir(s:format_path(expand(g:bujo_path), s:format_filename(a:journal)), {f -> f !~ '\(' . s:BUJO_DAILY . '\|' . s:BUJO_MONTHLY . '\|' . s:BUJO_FUTURE . '\|' . s:BUJO_BACKLOG. '\)'})
-		echom l:collections
 	catch
 		return v:false
 	endtry
 	for entry in l:collections
-		echom s:format_filename(entry) . " == " . s:format_filename(a:collection . ".md")
 		if s:format_filename(entry) ==# s:format_filename(a:collection . ".md")
 			return v:true
 		endif
 	endfor
 	return v:false
-	
 endfunction
 
 function! s:set_current_journal(journal) abort
