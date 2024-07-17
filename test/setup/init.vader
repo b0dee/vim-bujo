@@ -1,7 +1,7 @@
 # Setup tests
 
 Execute (Set variables for test execution):
-  let g:bujo_journal_default_name = "Vader"
+  let g:bujo_default_journal = "Vader"
   let g:bujo_vader_testing = v:true
   let g:bujo_vader_mkdir_choice = 1
 
@@ -14,41 +14,41 @@ Execute (Set variables for test execution):
 
   function! InitMissingHeaderListA()
     return [
-    \ g:bujo_journal_default_name,
+    \ g:bujo_default_journal,
     \ "",
     \ g:task_header,
     \ g:task_list_char . " " . "Pre-existing test entry",
     \ g:task_list_char . " ",
     \ "",
     \ g:note_header,
+    \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
     \ (g:note_list_char == "" ? "" : g:note_list_char . " ")  . "Pre-existing test entry",
     \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
-    \ "",
     \ ]
   endfunction
   function! InitMissingHeaderListB()
     return [
-    \ g:bujo_journal_default_name,
+    \ g:bujo_default_journal,
     \ "",
     \ g:event_header,
     \ g:event_list_char . " " . "Pre-existing test entry",
     \ g:event_list_char . " ",
     \ "",
     \ g:note_header,
+    \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
     \ (g:note_list_char == "" ? "" : g:note_list_char . " ")  . "Pre-existing test entry",
     \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
-    \ "",
     \ ]
   endfunction
   function! InitEmptyListNoHeaders()
     return [
-    \ g:bujo_journal_default_name,
+    \ g:bujo_default_journal,
     \ "",
     \ ]
   endfunction
   function! InitPopulatedList()
     return [
-    \ g:bujo_journal_default_name,
+    \ g:bujo_default_journal,
   \ "",
   \ g:event_header,
   \ g:event_list_char . " " . "Pre-existing test entry",
@@ -59,14 +59,14 @@ Execute (Set variables for test execution):
   \ g:task_list_char . " ",
   \ "",
   \ g:note_header,
+  \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
   \ (g:note_list_char == "" ? "" : g:note_list_char . " ") .  "Pre-existing test entry",
   \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
-  \ "",
   \ ]
   endfunction
   function! InitEmptyList()
     return [
-    \ g:bujo_journal_default_name,
+    \ g:bujo_default_journal,
     \ "",
     \ g:event_header,
     \ g:event_list_char . " ",
@@ -76,17 +76,7 @@ Execute (Set variables for test execution):
     \ "",
     \ g:note_header,
     \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
-    \ "",
     \ ]
-  endfunction
-
-Execute (Creating helper functions):
-  let seed = srand(localtime())
-  function! RandString(len, sep = "")
-    for i in range(len - 1)
-     let result = nr2char((rand(seed) % 95) + 32) . a:sep
-    endfor
-    return result
   endfunction
 
 Include (Remove any existing test journals): setup/teardown.vader
