@@ -647,27 +647,25 @@ function! bujo#CreateCollection(bang, ...) abort
   let l:collection_path = s:format_path(l:journal_dir, l:collection_index_link)
 
   call s:init_journal_index(l:journal)
-	" TODO - Check for and prevent duplication 
-
-	if s:is_collection(l:journal, l:collection) 
-		" We are duplicating. 
+  if !s:is_collection(l:journal, l:collection) 
+    " We are duplicating. 
+    " Add the entry to index
+    let l:content = readfile(l:journal_index)
+    " Skip the first 2 lines, these will always be the index header and a new line
+    let l:counter = 0
+    for line in l:content[2:-1]
+      let l:counter += 1
+      let l:collection_header = ". [" . l:collection_print_name . "](" . l:collection_index_link . ")"
+      if line !~# substitute(g:bujo_index_list_char, "{#}", l:counter . ". ", "g") 
+        call insert(l:content, substitute(g:bujo_index_list_char, "{#}", l:counter, "g") . l:collection_header, l:counter + 2)
+        break
+      " Account for the case where we are at EOF and no empty newline
+      elseif line ==# l:content[0] || len(l:content) == l:counter + 2
+        call add(l:content, substitute(g:bujo_index_list_char, "{#}", l:counter + 1, "g") . l:collection_header)
+      endif
+    endfor
+    call writefile(l:content, l:journal_index)
 	endif
-  " Add the entry to index
-  let l:content = readfile(l:journal_index)
-  " Skip the first 3 lines, these will always be the index header and a new line
-  let l:counter = 1
-  for line in l:content[3:-1]
-    let l:counter += 1
-    let l:collection_header = ". [" . l:collection_print_name . "](" . l:collection_index_link . ")"
-    if line !~# substitute(g:bujo_index_list_char, "{#}", l:counter . ". ", "g") 
-      call insert(l:content, substitute(g:bujo_index_list_char, "{#}", l:counter, "g") . l:collection_header, l:counter + 2)
-      break
-    " Account for the case where we are at EOF and no empty newline
-    elseif line ==# l:content[0] && len(l:content) == l:counter + 2
-      call add(l:content, substitute(g:bujo_index_list_char, "{#}", l:counter + 2, "g") . l:collection_header)
-    endif
-  endfor
-  call writefile(l:content, l:journal_index)
 
   let l:content = [ "# " . l:collection_print_name, "", "" ]
   call writefile(l:content, l:collection_path)
