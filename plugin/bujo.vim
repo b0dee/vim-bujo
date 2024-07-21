@@ -61,12 +61,9 @@ command! -nargs=*       Backlog      call bujo#OpenBacklog(<f-args>)
 ""        These needs to update any open vim buffers to be the new path, same
 ""        way that fugitive etc. do
 "" TODO - Have commands be smart enough to put things under appropriate header/collection when 1st, 2nd etc. args match existing (i.e. `collection xyz this is the new collection` would create that collection in xyz journal, `collection "Journal with spaces" "Collection with Spaces" Then create a new collection` would create a collection entry under collection header Collection with spaces in journal Journal with spaces)
-"" TODO - Replace existing window if already open, don't spam create them
 "" TODO - Monthly: Update table setting the row for today to have a link to daily log, remove the previous link
 "" TODO - Make Vader test suite with expectations
 "" TODO - Control insert/append based on entry type?
-"" TODO - Future log: auto scroll to put this month header at top line
-"" TODO - Future log: open a different year
 "" TODO - Index: On open index update daily log entry to point to the correct daily file
 
 "" TODO - Bug:
