@@ -274,8 +274,14 @@ function! s:format_path(...) abort
 	return l:path
 endfunction
 
-function! s:format_journal_from_path(journal) abort
-		return s:format_initial_case(substitute(a:journal, "_", " ", "g"))
+function! s:format_from_path(journal, collection = "index.md") abort
+  try 
+    return substitute(readfile(s:format_path(g:bujo_path, a:journal, a:collection), "", 1)[0][2:-1], "index", "", "g")
+  catch
+    " This shouldn't happen, but sometimes while in dev so just easier 
+    " If it does happen at least there's a fallback...
+    return s:format_initial_case(substitute(a:journal, "_", " ", "g"))
+  endtry
 endfunction
 
 function! s:list_journals() abort
@@ -433,6 +439,36 @@ endfunction
 function! s:list_replace_entry(list, target, new) abort
 endfunction
 
+function! s:list_collections(show_all) abort
+  let l:collections = []
+  if a:show_all
+    let l:journals = s:list_journals()
+    for journal in l:journals
+      let l:entry = [journal, readdir(s:format_path(g:bujo_path, journal), {f -> f !~ '\(' . s:BUJO_DAILY . '\|' . s:BUJO_MONTHLY . '\|' . s:BUJO_FUTURE . '\|' . s:BUJO_BACKLOG. '\)'})]
+      call add(l:collections, l:entry)
+    endfor
+  else
+    call add(l:collections, [s:current_journal, readdir(s:format_path(expand(g:bujo_path), s:format_filename(s:current_journal)), {f -> f !~ '\(' . s:BUJO_DAILY . '\|' . s:BUJO_MONTHLY . '\|' . s:BUJO_FUTURE . '\|' . s:BUJO_BACKLOG. '\)'})])
+  endif
+  return l:collections
+endfunction
+
+function! s:format_list_collections(collections) abort
+    let l:content = []
+    for journal in a:collections
+      let l:journal_name = s:format_from_path(journal[0])
+      call add(l:content, "# " . l:journal_name)
+      call add(l:content, "")
+      for collection in journal[1]
+        let l:formatted_entry = s:format_from_path(journal[0], collection)
+        let l:entry_link = s:format_path(g:bujo_path, journal[0], collection)
+        call add(l:content, "* [" . l:formatted_entry . "](" . l:entry_link . ")")
+      endfor
+      call add(l:content, "")
+    endfor
+    return l:content
+endfunction
+
 function! s:is_collection(journal, collection)  abort
 	try
 		let l:collections = readdir(s:format_path(expand(g:bujo_path), s:format_filename(a:journal)), {f -> f !~ '\(' . s:BUJO_DAILY . '\|' . s:BUJO_MONTHLY . '\|' . s:BUJO_FUTURE . '\|' . s:BUJO_BACKLOG. '\)'})
@@ -477,7 +513,7 @@ endfunction
 function! bujo#CurrentJournal() abort
   let l:prepend = len(g:bujo_journal_statusline_prepend) == 0 ? "": " " . g:bujo_journal_statusline_prepend
   let l:append = len(g:bujo_journal_statusline_append) == 0 ? "": " " . g:bujo_journal_statusline_append
-  return l:prepend . s:format_journal_from_path(s:current_journal) . l:append
+  return l:prepend . s:format_from_path(s:current_journal) . l:append
 endfunction
 
 " function! s:open_or_replace_window(is_journal = v:false)
@@ -625,13 +661,18 @@ function! bujo#OpenFuture(...) abort
   endif
 endfunction
 
-function! bujo#CreateCollection(bang, ...) abort
-	if a:bang && a:0 == 0
-		" Show list of collections grouped by journal
-		"readdir
-	endif
-  if a:0 == 0 
-    echoerr "create_collection() requires at least 1 argment. Aborting."
+function! bujo#Collection(bang, ...) abort
+  if a:0 == 0
+    let l:collections = s:list_collections(a:bang)
+    let l:content = s:format_list_collections(l:collections)
+    execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_index_winsize > 0)? (g:bujo_index_winsize*winwidth(0))/100 : -g:bujo_index_winsize) . "new" 
+    setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe nowrap
+    " for entry in readdir(expand(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f !~ "^[.]"})
+    "   call add(l:content, "- [" . s:format_initial_case(entry). "]( " . entry . "/index.md" . " )")
+    " endfor
+    call append(0, l:content)
+    setlocal readonly nomodifiable
+    return
   endif
 
 
