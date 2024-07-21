@@ -15,6 +15,7 @@ let s:BUJO_DAILY = "daily"
 let s:BUJO_BACKLOG = "backlog"
 let s:BUJO_MONTHLY = "monthly"
 let s:BUJO_FUTURE = "future"
+let s:THIS_YEAR = strftime("%Y")
 
 if !exists('g:bujo_path')
 	let g:bujo_path = '~/repos/bujo/'
@@ -194,6 +195,18 @@ if exists("g:bujo_index_entries")
   call extend(s:bujo_index_entries, g:bujo_index_entries)
 endif
 
+let s:date_suffixes = {
+\ 1: "st",
+\ 2: "nd",
+\ 3: "rd",
+\ 4: "th",
+\ 5: "th",
+\ 6: "th",
+\ 7: "th",
+\ 8: "th",
+\ 9: "th",
+\ 0: "th",
+\ }
 let s:bujo_months = [
   \ { "short": "Jan", "long": "January", "days": 31 },
   \ { "short": "Feb", "long": "February", "days": 28 },
@@ -364,6 +377,39 @@ function! s:init_daily(journal) abort
   call writefile(l:content, l:daily_log)
 endfunction
 
+function! s:init_future(year) abort
+  let l:journal_dir = s:format_path(g:bujo_path, s:current_journal)
+  let l:future_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_FUTURE . "_" . a:year . ".md")
+  if filereadable(l:future_log)
+    return
+  endif
+  let l:content = []
+  call add(l:content, s:format_header(g:bujo_future_header))
+  call add(l:content, "")
+  if s:THIS_YEAR == a:year 
+    " Skip the months that have already passed
+    let l:months = s:bujo_months[strftime("%m") - 1:-1]
+  else 
+    let l:months = s:bujo_months
+  endif 
+  for month in l:months
+    " TODO - This **will** break between systems. Will need to add a conditional to decide what to go with when we encounter it
+    call add(l:content, substitute(substitute(g:bujo_future_month_header, "%B", month["long"], "g"), "%b", month["short"], "g"))
+    call add(l:content, "")
+    for key in g:bujo_header_entries_ordered
+      if s:bujo_header_entries[key]["future_enabled"]
+        call add(l:content, s:bujo_header_entries[key]["header"])
+        call add(l:content, s:bujo_header_entries[key]["list_char"] . " ")
+        call add(l:content, "")
+      endif
+    endfor
+    call add(l:content, "")
+    call writefile(l:content, l:future_log)
+  endfor
+endfunction
+
+" FIXME - Doesn't handle if no prefilled entry exists 
+" check if line == "" too
 function! s:list_insert_entry(list, type_header, type_list_char, entry, stop_pattern = v:null) abort
   let l:index = 1
   let l:list_char = a:type_list_char . (a:type_list_char == "" ? "" : " " )
@@ -628,37 +674,86 @@ function! bujo#OpenFuture(...) abort
   let l:future_log = l:journal_dir . "/" . s:format_filename(s:bujo_future_filename) 
   if s:mkdir_if_needed(s:current_journal) | return | endif
 
-  if !filereadable(l:future_log)
-    let l:content = []
-    call add(l:content, s:format_header(g:bujo_future_header))
-    call add(l:content, "")
-    for month in s:bujo_months
-      " TODO - This **will** break between systems. Will need to add a conditional to decide what to go with when we encounter it
-      call add(l:content, substitute(substitute(g:bujo_future_month_header, "%B", month["long"], "g"), "%b", month["short"], "g"))
-      call add(l:content, "")
-      for key in g:bujo_header_entries_ordered
-        if s:bujo_header_entries[key]["future_enabled"]
-          call add(l:content, s:bujo_header_entries[key]["header"])
-          call add(l:content, s:bujo_header_entries[key]["list_char"] . " ")
-          call add(l:content, "")
-        endif
-      endfor
-      call add(l:content, "")
-      call writefile(l:content, l:future_log)
-    endfor
-  endif
-
   if a:0 == 0
-    execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_daily_winsize > 1)? (g:bujo_daily_winsize*winwidth(0))/100 : -g:bujo_daily_winsize) "new" 
-    execute  "edit " . fnameescape(l:future_log)
-  else 
-    echoerr "Future entry rappid logging not implemented."
-    return
-    let l:type = tolower(a:2)
-    let l:entry = substitute(join(a:000[1:-1], " "), "\\(^[a-z]\\)", "\\U\\1", "g")
-    let l:content = readfile(l:future_log)
-    call writefile(s:list_append_entry(l:content, s:bujo_header_entries[l:type]["header"], s:bujo_header_entries[l:type]["list_char"], l:entry), l:future_log)
+    let l:year = s:THIS_YEAR
+  else
+    let l:year = a:1 
+    let l:future_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_FUTURE . "_" . l:year . ".md")
   endif
+  
+  call s:init_future(l:year)
+
+  execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_daily_winsize > 1)? (g:bujo_daily_winsize*winwidth(0))/100 : -g:bujo_daily_winsize) "new" 
+  execute  "edit " . fnameescape(l:future_log)
+endfunction
+
+function! bujo#FutureEntry(type, providing_year, ...) abort
+  if a:0 == 0
+    echoerr "FutureEntry requires at least 1 additional argument"
+  endif
+  
+  if a:providing_year 
+    let l:year = a:1 
+    let l:month = a:2
+    let l:day = a:3
+    let l:entry_start_index = 3 
+  else 
+    let l:year = strftime("%Y")
+    let l:month = a:1
+    let l:day = a:2
+    let l:entry_start_index = 2 
+  endif
+  let l:date_suffix = s:date_suffixes[l:day[-1:-1]]
+  let l:entry = l:day . l:date_suffix . ": " . s:format_title_case(join(a:000[l:entry_start_index:-1], " "))
+
+  try
+    let l:month = s:bujo_months[str2nr(expr)]["short"]
+  catch
+    if len(l:month) < 3 
+      echoerr "Please provide at least the first 3 characters of the month when specifying name."
+    endif
+    let l:month = l:month[0:2]
+  endtry
+  
+  call s:init_future(year)
+
+  " Open that year's future log
+  let l:future_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_FUTURE . "_" . l:year . ".md")
+  let l:content = readfile(l:future_log)
+
+  let l:search_for = substitute(substitute(g:bujo_future_month_header, "%B", l:month, "g"), "%b", l:month, "g")
+  " Find the month provided 
+  let l:index = 0
+  for line in l:content
+    if line =~? l:search_for
+      break
+    endif
+    let l:index += 1
+  endfor
+
+  " Add entry under appropriate type header
+  " TODO - Make this stop at the next month's header as may just run to EOF
+  let l:list_char = s:bujo_header_entries[a:type]["list_char"]
+  let l:list_char = l:list_char . (l:list_char == "" ? "" : " " )
+  for line in l:content[l:index: -1]
+    if line ==# s:bujo_header_entries[a:type]["header"]
+      for item in l:content[l:index:-1]
+        if item ==# l:list_char || item == ""
+          if l:list_char ==# "" 
+            call insert(l:content, "", l:index)
+            let l:index += 1
+          endif
+          call insert(l:content, l:list_char . l:entry, l:index)
+          break
+        endif
+        let l:index += 1
+      endfor
+      break
+    endif
+    let l:index += 1
+  endfor
+
+  call writefile(l:content, l:future_log)
 endfunction
 
 function! bujo#Collection(bang, ...) abort
