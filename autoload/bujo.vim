@@ -124,28 +124,25 @@ if !exists('g:bujo_monthly_table_align')
 	let g:bujo_monthly_table_align = v:true
 endif
 
-if !exists('g:bujo_monthly_table_headers_ordered')
-  let g:bujo_monthly_table_headers_ordered = [
-  \ "gratitude",
-  \ "meditation",
-  \ "reading"
-  \ ]
+if !exists('g:bujo_define_default_monthly_table_headers')
+  let g:bujo_define_default_monthly_table_headers = v:true
 endif
-if !exists('g:bujo_monthly_table_headers')
-  let g:bujo_monthly_table_headers = { 
-  \ "gratitude": {
-  \		"display":"Gratitude",
-  \		"cron":""
+
+if !exists('g:bujo_monthly_table_headers') && g:bujo_define_default_monthly_table_headers
+  let g:bujo_monthly_table_headers = [ 
+  \ {
+  \		"title":"Gratitude",
+  \		"cron":"* * * *"
   \ },
-  \ "meditation": {
-  \		"display":"Meditation",
-  \		"cron":""
+  \ {
+  \		"title":"Meditation",
+  \		"cron":"* * * *"
   \ },
-  \ "reading": {
-  \		"display":"Reading",
-  \		"cron":""
+  \ {
+  \		"title":"Reading",
+  \		"cron":"1,3,4,5-9 * * *"
   \ }
-  \ }
+  \ ]
 endif
 
 " Backlog vars
@@ -208,19 +205,30 @@ let s:date_suffixes = {
 \ 9: "th",
 \ 0: "th",
 \ }
+
+let s:bujo_days = { 
+\ 0: { "letter": "S", "short": "Sun", "long": "Sunday"},
+\ 1: { "letter": "M", "short": "Mon", "long": "Monday"},
+\ 2: { "letter": "T", "short": "Tue", "long": "Tuesday"},
+\ 3: { "letter": "W", "short": "Wed", "long": "Wednesday"},
+\ 4: { "letter": "T", "short": "Thu", "long": "Thursday"},
+\ 5: { "letter": "F", "short": "Fri", "long": "Friday"},
+\ 6: { "letter": "S", "short": "Sat", "long": "Saturday"},
+\ }
+
 let s:bujo_months = [
-  \ { "short": "Jan", "long": "January", "days": 31 },
-  \ { "short": "Feb", "long": "February", "days": 28 },
-  \ { "short": "Mar", "long": "March", "days": 31 },
-  \ { "short": "Apr", "long": "April", "days": 30 },
-  \ { "short": "May", "long": "May", "days": 31 },
-  \ { "short": "Jun", "long": "June", "days": 30 },
-  \ { "short": "Jul", "long": "July", "days": 31 },
-  \ { "short": "Aug", "long": "August", "days": 31 },
-  \ { "short": "Sep", "long": "September", "days": 30 },
-  \ { "short": "Oct", "long": "October", "days": 31 },
-  \ { "short": "Nov", "long": "November", "days": 30 },
-  \ { "short": "Dec", "long": "December", "days": 31 },
+  \ { "short": "Jan", "long": "January", "days": 31, "code": 0 },
+  \ { "short": "Feb", "long": "February", "days": 28, "code": 3 },
+  \ { "short": "Mar", "long": "March", "days": 31, "code": 3 },
+  \ { "short": "Apr", "long": "April", "days": 30, "code": 6 },
+  \ { "short": "May", "long": "May", "days": 31, "code": 1 },
+  \ { "short": "Jun", "long": "June", "days": 30, "code": 4 },
+  \ { "short": "Jul", "long": "July", "days": 31, "code": 6 },
+  \ { "short": "Aug", "long": "August", "days": 31, "code": 2 },
+  \ { "short": "Sep", "long": "September", "days": 30, "code": 5 },
+  \ { "short": "Oct", "long": "October", "days": 31, "code": 0 },
+  \ { "short": "Nov", "long": "November", "days": 30, "code": 3 },
+  \ { "short": "Dec", "long": "December", "days": 31, "code": 5 },
 \ ]
 " i.e. let g:bujo_migrated_to_future = '<' -- Migrated to future log
 "      > = Migrated to next week look
@@ -271,6 +279,20 @@ endfunction
 
 function! s:format_header(header, journal = s:format_initial_case(s:current_journal))  abort
   return strftime(substitute(a:header, "{journal}", s:format_initial_case(a:journal), "g"))
+endfunction
+
+function! s:format_header_custom_date(format, year = s:THIS_YEAR, month = s:THIS_MONTH, day = s:get_day_of_week(s:THIS_YEAR, s:THIS_MONTH, strftime("%d"))) abort
+  return substitute(
+          \ substitute(
+            \ substitute(
+              \ substitute(
+                \ substitute(
+                  \ substitute(a:format, "{journal}", s:format_initial_case(s:current_journal), "g"), 
+                  \ "%Y", a:year, "g"),
+                \ "%B", s:bujo_months[a:month - 1]["long"], "g"),
+              \ "%b", s:bujo_months[a:month - 1]["short"], "g"),
+            \ "%A", s:bujo_days[a:day - 1]["long"], "g"),
+          \ "%a", s:bujo_days[a:day - 1]["short"], "g")
 endfunction
 
 function! s:format_path(...) abort
@@ -558,6 +580,124 @@ function! s:interactive_journal_select(journal_list) abort
         return
       endif
       return s:set_current_journal(s:get_formatted_journal(a:journal_list[l:result - 1]))
+endfunction
+
+function! s:process_cron(expr, year, month, day, dow) abort
+  " TODO - This doesn't handle division styling
+  " i.e. */2 for every other day 
+  " need to reread up on cron again before doing any more tho
+  " Day Month Year DayOfWeek
+  let l:expr_list = split(a:expr, " ")
+  if len(l:expr_list) < 4 
+    call (extend(l:expr_list, repeat(["*"], 4 - len(l:expr_list))))
+  endif
+  let l:days = []
+  let l:day = l:expr_list[0]
+  let l:day = split(l:day, ",")
+  for day in l:day
+    if match(day, "-") != -1
+      let l:split = split(day, "-")
+      let l:lhs = l:split[0]
+      let l:rhs = l:split[1]
+      for range_day in range(l:lhs, l:rhs)
+        call add(l:days, range_day)
+      endfor
+    else
+      if str2nr(day) != 0
+        call add(l:days, str2nr(day))
+      else
+        call add(l:days, day)
+      endif
+    endif
+  endfor
+  let l:months = []
+  let l:month = l:expr_list[1]
+  let l:month = split(l:month, ",")
+  for month in l:month
+    if match(month, "-") != -1
+      let l:split = split(month, "-")
+      let l:lhs = l:split[0]
+      let l:rhs = l:split[1]
+      for range_month in range(l:lhs, l:rhs)
+        call add(l:months, range_month)
+      endfor
+    else
+      if str2nr(month) != 0
+        call add(l:months, str2nr(month))
+      else
+        call add(l:months, month)
+      endif
+    endif
+  endfor
+  let l:years = []
+  let l:year = l:expr_list[2]
+  let l:year = split(l:year, ",")
+  for year in l:year
+    if match(year, "-") != -1
+      let l:split = split(year, "-")
+      let l:lhs = l:split[0]
+      let l:rhs = l:split[1]
+      for range_year in range(l:lhs, l:rhs)
+        if str2nr(year) != 0
+          call add(l:years, str2nr(year))
+        else
+          call add(l:years, year)
+        endif
+      endfor
+    else
+      call add(l:years, year)
+    endif
+  endfor
+  let l:dows = []
+  let l:dow = l:expr_list[3]
+  let l:dow = split(l:dow, ",")
+  for dow in l:dow
+    if match(dow, "-") != -1
+      let l:split = split(dow, "-")
+      let l:lhs = l:split[0]
+      let l:rhs = l:split[1]
+      for range_dow in range(l:lhs, l:rhs)
+        call add(l:dows, range_dow)
+      endfor
+    else
+      if str2nr(dow) != 0
+        call add(l:dows, str2nr(dow))
+      else
+        call add(l:dows, dow)
+      endif
+    endif
+  endfor
+  if index(l:years, "*") >= 0 || index(l:years, a:year) >= 0
+    if index(l:months, "*") >= 0 ||  index(l:months, a:month) >= 0
+      if index(l:days, "*") >= 0 ||  index(l:days, a:day) >= 0
+        if index(l:dows, "*") >= 0 || index(l:dows, a:dow) >= 0
+          return v:true
+        endif
+      endif
+    endif
+  endif
+  return v:false
+endfunction
+
+function! s:is_leap_year(year) abort
+  return a:year % 400 == 0 || (a:year % 100 != 0 && a:year % 4 == 0)
+endfunction
+
+" 0 = Sunday
+" 1 = Monday
+" 2 = Tuesday
+" 3 = Wednesday
+" 4 = Thursday
+" 5 = Friday
+" 6 = Saturday
+function! s:get_day_of_week(year, month, day) abort
+  " TODO - Ability to shift these aroud according to what day of the week you
+  " want to start on
+  let l:century_codes = {17: 4, 18: 2, 19: 0, 20: 6, 21: 4, 22: 2, 23:0}
+  let l:year_code = (a:year[2:-1] + (a:year[-2:-1] / 4)) % 7
+  let l:month_code = s:bujo_months[a:month - 1]["code"]
+  let l:leap = s:is_leap_year(a:year) && (a:month == 0 || a:month == 1) ? 1: 0 
+  return (l:year_code + l:month_code + l:century_codes[a:year[0:1]] + a:day - l:leap) % 7
 endfunction
 
 function! bujo#CurrentJournal() abort
@@ -876,7 +1016,7 @@ function! s:init_monthly(month) abort
   if filereadable(l:monthly_log)
     return
   endif
-  let l:content = [ s:format_header(g:bujo_monthly_header), "" ]
+  let l:content = [ s:format_header_custom_date(g:bujo_monthly_header, s:THIS_YEAR, a:month), "" ]
   for header in g:bujo_header_entries_ordered
     if s:bujo_header_entries[header]["monthly_enabled"]
       call add(l:content, s:format_header(s:bujo_header_entries[header]["header"]))
@@ -889,9 +1029,9 @@ function! s:init_monthly(month) abort
     let l:empty_checkbox = "[ ]"
     let l:table_horizontal_border = "|" . repeat("-",len(l:day_header) + 1)
     let l:row = "| " . l:day_header
-    for header in g:bujo_monthly_table_headers_ordered
-      let l:table_horizontal_border .= "-+" . repeat("-", len(s:format_header(g:bujo_monthly_table_headers[header]["display"])) + 1)
-      let l:row .= " | " . s:format_header(g:bujo_monthly_table_headers[header]["display"])
+    for header in g:bujo_monthly_table_headers
+      let l:table_horizontal_border .= "-+" . repeat("-", len(s:format_header(header["title"])) + 1)
+      let l:row .= " | " . s:format_header(header["title"])
     endfor
     let l:table_horizontal_border .= "-|"
     let l:row .= " |"
@@ -899,17 +1039,23 @@ function! s:init_monthly(month) abort
     call add(l:content, l:row)
     if g:bujo_monthly_table_align
       let l:row = "| :" . repeat("-", len(l:day_header) - 1) . " |"
-      for header in g:bujo_monthly_table_headers_ordered
-        let l:row .= " :" . repeat("-", len(g:bujo_monthly_table_headers[header]["display"]) - 2) . ": |"
+      for header in g:bujo_monthly_table_headers
+        let l:row .= " :" . repeat("-", len(header["title"]) - 2) . ": |"
       endfor
       call add(l:content, l:row)
     endif
-    for day in range(2, s:bujo_months[strftime("%m") - 1]["days"])
-      let l:row = "| " . day . "." . repeat(" ", len(l:day_header) - (day / 10 < 1 ? 2: 3)) . " |"
-      for header in g:bujo_monthly_table_headers_ordered
-        let l:padding = ((len(g:bujo_monthly_table_headers[header]["display"]) + 2) / 2) - (len(l:empty_checkbox) / 2)
-        let l:rounding_padding = (len(g:bujo_monthly_table_headers[header]["display"]) + 2) - ((l:padding * 2) + len(l:empty_checkbox))
-        let l:row .= repeat(" ", l:padding) . l:empty_checkbox . repeat(" ", l:padding + l:rounding_padding) . "|"
+    for day in range(1, s:bujo_months[a:month - 1]["days"])
+      let l:row = "| " . s:bujo_days[s:get_day_of_week(s:THIS_YEAR, a:month, day)]["letter"] . day . "." . repeat(" ", len(l:day_header) - (day / 10 < 1 ? 3: 4)) . " |"
+      for header in g:bujo_monthly_table_headers
+        let l:padding = ((len(header["title"]) + 2) / 2) - (len(l:empty_checkbox) / 2)
+        let l:cron_expr = header["cron"]
+        if s:process_cron(l:cron_expr, s:THIS_YEAR, a:month, day, s:get_day_of_week(s:THIS_YEAR, a:month, day))
+          let l:cell_content = l:empty_checkbox 
+        else
+          let l:cell_content = repeat(" ", len(l:empty_checkbox))
+        endif
+        let l:rounding_padding = (len(header["title"]) + 2) - ((l:padding * 2) + len(l:empty_checkbox))
+        let l:row .= repeat(" ", l:padding) . l:cell_content . repeat(" ", l:padding + l:rounding_padding) . "|"
       endfor
       call add(l:content, l:row)
     endfor
@@ -925,6 +1071,20 @@ endfunction
 function! bujo#OpenMonthly(...) abort
   if a:0 > 0  
     let l:month = a:1
+    if l:month =~ "[0-9]+"
+      let l:month = str2nr(l:month)
+    else
+      if len(l:month) < 3 
+        echoerr "Please provide at least 3 characters when specifying a month to properly differentiate between similar names"
+      endif
+      let l:index = 0
+      for entry in s:bujo_months
+        let l:index += 1
+        if entry["short"] =~? l:month[-3:-1]
+          let l:month = l:index
+        endif
+      endfor
+    endif
   else
     let l:month = s:THIS_MONTH
   endif
