@@ -440,6 +440,9 @@ endfunction
 
 " FIXME - Make notes actually append to either EOF 
 " or before next header
+" FIXME - Doesn't handle if no prefilled entry exists 
+" check if line == "" too
+" FIXME - Now adding lots of pre filled list entries
 function! s:list_append_entry(list, type_header, type_list_char, entry)  abort
   let l:index = 1
   let l:list_char = a:type_list_char . (a:type_list_char == "" ? "" : " " )
@@ -670,6 +673,9 @@ function! bujo#CreateEntry(type, is_urgent, ...) abort
 endfunction
 
 " bujo#This needs to handle for month selected (required)
+" TODO - Argument passed should be year or nothing
+" Year will open that year's monthly log 
+" Option for month to take to that month of that log
 function! bujo#OpenFuture(...) abort
   let l:journal_dir = s:format_path(g:bujo_path, s:current_journal)
   let l:future_log = l:journal_dir . "/" . s:format_filename(s:bujo_future_filename) 
@@ -689,6 +695,8 @@ function! bujo#OpenFuture(...) abort
 endfunction
 
 function! bujo#FutureEntry(type, providing_year, ...) abort
+  " TODO - Ignore day, user can provide this if they choose as part of the entry
+  " That way can have a general entry w/ no deadline (wont auto feed into daily log)
   if a:0 == 0
     echoerr "FutureEntry requires at least 1 additional argument"
   endif
