@@ -687,11 +687,31 @@ function! bujo#OpenFuture(...) abort
     let l:year = a:1 
     let l:future_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_FUTURE . "_" . l:year . ".md")
   endif
+  if a:0 == 2
+    let l:month = a:2
+  else 
+    if l:year == s:THIS_YEAR
+      let l:month = s:THIS_MONTH
+    else
+      let l:month = "Jan"
+    endif
+  endif
   
   call s:init_future(l:year)
 
   execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_daily_winsize > 1)? (g:bujo_daily_winsize*winwidth(0))/100 : -g:bujo_daily_winsize) "new" 
   execute  "edit " . fnameescape(l:future_log)
+  let l:content = readfile(l:future_log)
+  let l:month_index = 0
+  for line in l:content
+    let l:month_index += 1
+    if line =~? l:month
+      break
+    endif
+  endfor
+  " Set the month to be the top of the file
+  call cursor(l:month_index, 0) 
+  execute "normal z\<ENTER>"
 endfunction
 
 function! bujo#FutureEntry(type, providing_year, ...) abort
