@@ -39,6 +39,7 @@ command! -nargs=*       Backlog      call bujo#OpenBacklog(<f-args>)
 "
 "" TODO - Features:
 "" TODO - CORE:
+"" TODO - Replace existing window if already open, don't spam create them
 "" TODO - Reflect Command
 ""      - ability to have this be done automatically/ prompt (perhaps controllable so can be silenced) when
 ""      - launching any bujo command
@@ -71,6 +72,7 @@ command! -nargs=*       Backlog      call bujo#OpenBacklog(<f-args>)
 "" TODO - Sort out issue with recording a weekly rolling daily log
 "" TODO - list append/insert doesn't actually 'find todays header' it just inserts it a the top of the file
 ""        but when support for future daily log entries is added this may not be the case
+"" TODO - There is no care for if week starts mon/sun/ etc
 
 "" TODO - Refactor: 
 "" TODO - Make journal index use list_append_entry 
