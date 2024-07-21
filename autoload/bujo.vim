@@ -16,6 +16,7 @@ let s:BUJO_BACKLOG = "backlog"
 let s:BUJO_MONTHLY = "monthly"
 let s:BUJO_FUTURE = "future"
 let s:THIS_YEAR = strftime("%Y")
+let s:THIS_MONTH = strftime("%m")
 
 if !exists('g:bujo_path')
 	let g:bujo_path = '~/repos/bujo/'
@@ -841,76 +842,84 @@ function! bujo#OpenBacklog(...) abort
   endif
 endfunction
 
-function! bujo#OpenMonthly(...) abort
-  if a:0 > 0 && a:0 < 2
-    echoerr "Monthly command requires at least 3 arguments if providing any."
-    return
-  elseif a:0 > 0
-    let l:type = tolower(a:1) 
-    let l:entry = substitute(join(a:000[1:-1], " "), "\\(^[a-z]\\)", "\\U\\1", "g")
-  endif
-
+function! s:init_monthly(month) abort
   let l:journal_dir = s:format_path(g:bujo_path, s:current_journal)
-  let l:monthly_log = l:journal_dir . "/" . s:format_filename(s:bujo_monthly_filename)
-
-  if s:mkdir_if_needed(s:current_journal) | return | endif
-  if !filereadable(l:monthly_log)
-    let l:content = [ s:format_header(g:bujo_monthly_header), "" ]
-    for header in g:bujo_header_entries_ordered
-      if s:bujo_header_entries[header]["monthly_enabled"]
-        call add(l:content, s:format_header(s:bujo_header_entries[header]["header"]))
-        call add(l:content, s:bujo_header_entries[header]["list_char"] . " ")
-        call add(l:content, "")
-      endif
-    endfor
-    if g:bujo_monthly_table_enabled 
-      let l:day_header = "Day"
-      let l:empty_checkbox = "[ ]"
-      let l:table_horizontal_border = "|" . repeat("-",len(l:day_header) + 2)
-      let l:row = "| " . l:day_header
-      for header in g:bujo_monthly_table_headers_ordered
-        let l:table_horizontal_border .= "-+" . repeat("-", len(s:format_header(g:bujo_monthly_table_headers[header]["display"])) + 2)
-        let l:row .= " | " . s:format_header(g:bujo_monthly_table_headers[header]["display"])
-      endfor
-      let l:table_horizontal_border .= "-|"
-      let l:row .= " |"
-      call add(l:content, l:table_horizontal_border)
-      call add(l:content, l:row)
-      if g:bujo_monthly_table_align
-        let l:row = "| :" . repeat("-", len(l:day_header) - 2) . " |"
-        for header in g:bujo_monthly_table_headers_ordered
-          let l:row .= " :" . repeat("-", len(g:bujo_monthly_table_headers[header]["display"]) - 3) . ": |"
-        endfor
-        call add(l:content, l:row)
-      endif
-      for day in range(2, s:bujo_months[strftime("%m") - 1]["days"])
-        let l:row = "| " . day . "." . repeat(" ", len(l:day_header) - (day / 11 < 1 ? 2: 3)) . " |"
-        for header in g:bujo_monthly_table_headers_ordered
-          let l:padding = ((len(g:bujo_monthly_table_headers[header]["display"]) + 3) / 2) - (len(l:empty_checkbox) / 2)
-          let l:rounding_padding = (len(g:bujo_monthly_table_headers[header]["display"]) + 3) - ((l:padding * 2) + len(l:empty_checkbox))
-          let l:row .= repeat(" ", l:padding) . l:empty_checkbox . repeat(" ", l:padding + l:rounding_padding) . "|"
-        endfor
-        call add(l:content, l:row)
-      endfor
-      call add(l:content, l:table_horizontal_border)
+  let l:monthly_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_MONTHLY . "_" . s:THIS_YEAR . "_" . a:month . ".md")
+  if filereadable(l:monthly_log)
+    return
+  endif
+  let l:content = [ s:format_header(g:bujo_monthly_header), "" ]
+  for header in g:bujo_header_entries_ordered
+    if s:bujo_header_entries[header]["monthly_enabled"]
+      call add(l:content, s:format_header(s:bujo_header_entries[header]["header"]))
+      call add(l:content, s:bujo_header_entries[header]["list_char"] . " ")
       call add(l:content, "")
     endif
-    call writefile(l:content, l:monthly_log)
+  endfor
+  if g:bujo_monthly_table_enabled 
+    let l:day_header = "Day "
+    let l:empty_checkbox = "[ ]"
+    let l:table_horizontal_border = "|" . repeat("-",len(l:day_header) + 1)
+    let l:row = "| " . l:day_header
+    for header in g:bujo_monthly_table_headers_ordered
+      let l:table_horizontal_border .= "-+" . repeat("-", len(s:format_header(g:bujo_monthly_table_headers[header]["display"])) + 1)
+      let l:row .= " | " . s:format_header(g:bujo_monthly_table_headers[header]["display"])
+    endfor
+    let l:table_horizontal_border .= "-|"
+    let l:row .= " |"
+    call add(l:content, l:table_horizontal_border)
+    call add(l:content, l:row)
+    if g:bujo_monthly_table_align
+      let l:row = "| :" . repeat("-", len(l:day_header) - 1) . " |"
+      for header in g:bujo_monthly_table_headers_ordered
+        let l:row .= " :" . repeat("-", len(g:bujo_monthly_table_headers[header]["display"]) - 2) . ": |"
+      endfor
+      call add(l:content, l:row)
+    endif
+    for day in range(2, s:bujo_months[strftime("%m") - 1]["days"])
+      let l:row = "| " . day . "." . repeat(" ", len(l:day_header) - (day / 10 < 1 ? 2: 3)) . " |"
+      for header in g:bujo_monthly_table_headers_ordered
+        let l:padding = ((len(g:bujo_monthly_table_headers[header]["display"]) + 2) / 2) - (len(l:empty_checkbox) / 2)
+        let l:rounding_padding = (len(g:bujo_monthly_table_headers[header]["display"]) + 2) - ((l:padding * 2) + len(l:empty_checkbox))
+        let l:row .= repeat(" ", l:padding) . l:empty_checkbox . repeat(" ", l:padding + l:rounding_padding) . "|"
+      endfor
+      call add(l:content, l:row)
+    endfor
+    call add(l:content, l:table_horizontal_border)
+    call add(l:content, "")
   endif
+  call writefile(l:content, l:monthly_log)
 
-  if a:0 == 0 
-    execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_daily_winsize > 1)? (g:bujo_daily_winsize*winwidth(0))/100 : -g:bujo_daily_winsize) "new" 
-    execute  "edit " . fnameescape(l:monthly_log)
-  else
-    " MAYBE TODO - MAYBE change open_monthly to open a specific month rather than rappid log
-    " Or figure out a nice implementation for doing rappid logging + specifying month
-    let l:type = tolower(a:2)
-    let l:entry = substitute(join(a:000[1:-1], " "), "\\(^[a-z]\\)", "\\U\\1", "g")
-    let l:content = readfile(l:monthly_log)
-    call writefile(s:list_append_entry(l:content, s:bujo_header_entries[l:type]["header"], s:bujo_header_entries[l:type]["list_char"], l:entry), l:monthly_log)
-  endif
 endfunction
 
+" TODO - When initialising monthly should pull any info from future log for this year and month
+" TODO (In future) - When opening do a diff to pull any missing entries over from future log
+function! bujo#OpenMonthly(...) abort
+  if a:0 > 0  
+    let l:month = a:1
+  else
+    let l:month = s:THIS_MONTH
+  endif
+
+  let l:monthly_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_MONTHLY . "_" . s:THIS_YEAR . "_" . l:month . ".md")
+
+  if s:mkdir_if_needed(s:current_journal) | return | endif
+  call s:init_monthly(l:month)
+
+  execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_daily_winsize > 1)? (g:bujo_daily_winsize*winwidth(0))/100 : -g:bujo_daily_winsize) "new" 
+  execute  "edit " . fnameescape(l:monthly_log)
+endfunction
+
+function! bujo#MonthlyEntry(type, ...) abort
+  " FIXME - Notes add a lot of extra space around them
+  let l:month = s:THIS_MONTH
+  let l:monthly_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_MONTHLY . "_" . s:THIS_YEAR . "_" . l:month . ".md")
+  if s:mkdir_if_needed(s:current_journal) | return | endif
+  call s:init_monthly(l:month)
+  let l:entry = substitute(join(a:000[1:-1], " "), "\\(^[a-z]\\)", "\\U\\1", "")
+  let l:content = readfile(l:monthly_log)
+  call writefile(s:list_append_entry(l:content, s:bujo_header_entries[a:type]["header"], s:bujo_header_entries[a:type]["list_char"], l:entry), l:monthly_log)
+endfunction
 
 " Global wrappers made so Vader can run unit tests
 function! bujo#Vader_FormatFilename(filename) abort
