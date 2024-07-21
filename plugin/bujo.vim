@@ -60,14 +60,11 @@ command! -nargs=*       Backlog      call bujo#OpenBacklog(<f-args>)
 "" TODO - RenameJournal Command
 ""        These needs to update any open vim buffers to be the new path, same
 ""        way that fugitive etc. do
-"" TODO - Have commands be smart enough to put things under appropriate header/collection when 1st, 2nd etc. args match existing (i.e. `collection xyz this is the new collection` would create that collection in xyz journal, `collection "Journal with spaces" "Collection with Spaces" Then create a new collection` would create a collection entry under collection header Collection with spaces in journal Journal with spaces)
 "" TODO - Monthly: Update table setting the row for today to have a link to daily log, remove the previous link
 "" TODO - Make Vader test suite with expectations
-"" TODO - Control insert/append based on entry type?
 "" TODO - Index: On open index update daily log entry to point to the correct daily file
 
 "" TODO - Bug:
-"" TODO - Make filenames replace special characters
 "" TODO - Sort out issue with recording a weekly rolling daily log
 "" TODO - list append/insert doesn't actually 'find todays header' it just inserts it a the top of the file
 ""        but when support for future daily log entries is added this may not be the case
