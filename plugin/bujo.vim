@@ -47,7 +47,6 @@ command! -nargs=*       Backlog      call bujo#OpenBacklog(<f-args>)
 ""      - Initialises next weeks daily log showing the past week in horizontal split and monthly log in 
 ""      - vert split to move tasks in where needed 
 "" TODO - Automatic git pull, commit and push 
-"" TODO - Monthly Log: Cron scheduling of monthly headers (to auto populate table)
 "" TODO - Migration functionality
 "" TODO - Motions to navigate/ prepopulate command (outside bujo file)
 "" TODO - Motions within BuJo files
