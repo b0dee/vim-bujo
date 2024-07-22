@@ -810,11 +810,8 @@ function! bujo#CreateEntry(type, is_urgent, ...) abort
   call writefile(s:list_append_entry(l:content, s:bujo_header_entries[a:type]["header"], s:bujo_header_entries[a:type]["list_char"], l:entry), l:daily_log)
 endfunction
 
-" bujo#This needs to handle for month selected (required)
-" TODO - Argument passed should be year or nothing
-" Year will open that year's monthly log 
-" Option for month to take to that month of that log
 function! bujo#OpenFuture(...) abort
+  " FIXME - Scroll to month is broken
   let l:journal_dir = s:format_path(g:bujo_path, s:current_journal)
   let l:future_log = l:journal_dir . "/" . s:format_filename(s:bujo_future_filename) 
   if s:mkdir_if_needed(s:current_journal) | return | endif
