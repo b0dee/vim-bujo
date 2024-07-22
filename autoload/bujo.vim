@@ -305,7 +305,7 @@ function! s:format_from_path(journal, collection = "index.md") abort
   catch
     " This shouldn't happen, but sometimes while in dev so just easier 
     " If it does happen at least there's a fallback...
-    return s:format_initial_case(substitute(a:journal, "_", " ", "g"))
+    return s:format_initial_case(substitute(substitute(a:journal, "_", " ", "g"), ".md", "", ""))
   endtry
 endfunction
 
@@ -695,7 +695,7 @@ function! s:open_or_switch_window(file_path) abort
   let l:splitright = g:bujo_split_right ? "$" : "1"
   
   exe l:current_winnr . "wincmd w"
-  if match(expand("%:p"), expand(g:bujo_path)) >= 0
+  if match(expand("%:p"), expand(g:bujo_path)) >= 0 || match(expand("%:p"), "bujo://") >= 0
     execute "bd %" 
     "execute "edit " . fnameescape(a:file_path)
     "return
@@ -753,7 +753,7 @@ function! bujo#OpenIndex(list_journals, ...) abort
   endif
 
   if a:list_journals
-    call s:open_or_switch_window(s:format_filename(g:bujo_path, "internal", "index.md"))
+    call s:open_or_switch_window(s:format_path("bujo://", "global", "index.md"))
     setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
     let l:content = ["# Journal Index", ""]
     for entry in readdir(expand(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f !~ "^[.]"})
@@ -910,7 +910,8 @@ function! bujo#Collection(bang, ...) abort
   if a:0 == 0
     let l:collections = s:list_collections(a:bang)
     let l:content = s:format_list_collections(l:collections)
-    call s:open_or_switch_window(s:format_filename(g:bujo_path, "internal", "collections.md"))
+    let l:journal_name = a:bang ? "global" : s:current_journal
+    call s:open_or_switch_window(s:format_path("bujo://", l:journal_name, "collections.md"))
     setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe nowrap
     " for entry in readdir(expand(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f !~ "^[.]"})
     "   call add(l:content, "- [" . s:format_initial_case(entry). "]( " . entry . "/index.md" . " )")
@@ -1087,6 +1088,57 @@ function! bujo#MonthlyEntry(type, ...) abort
   call writefile(s:list_append_entry(l:content, s:bujo_header_entries[a:type]["header"], s:bujo_header_entries[a:type]["list_char"], l:entry), l:monthly_log)
 endfunction
 
+function! bujo#ListTasks(all_journals) abort
+  if a:all_journals
+    let l:journals = readdir(s:format_path(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f !~ "^[.]"})
+  else 
+    let l:journals = [s:current_journal]
+  endif
+
+  let l:content = [ "# Task List", "" ]
+  for journal in l:journals 
+    let l:formatted_journal_name = s:format_from_path(journal)
+    let l:journal_content = ["## Journal: " . l:formatted_journal_name, ""]
+    let l:collections = readdir(s:format_path(g:bujo_path, journal), {f -> f =~ "[.]md$"})
+    for collection in l:collections
+      let l:file_content = readfile(s:format_path(g:bujo_path, journal, collection))
+      let l:open_tasks = matchstrlist(l:file_content, '- \[ \] ..*')
+      if len(l:open_tasks) == 0
+        continue
+      endif
+
+      let l:has_tasks = v:true
+      let l:formatted_collection_name = s:format_from_path(collection)
+
+      call add(l:journal_content, "**" . l:formatted_collection_name . ":**")
+      for entry in l:open_tasks
+        call add(l:journal_content, entry["text"])
+      endfor
+      call add(l:journal_content, "")
+    endfor
+    if len(l:journal_content) > 2
+      call extend(l:content, l:journal_content)
+    endif
+  endfor
+  if len(l:content) == 2
+    call add(l:content, "**No open tasks found**")
+  endif
+
+  let l:journal_name = len(l:journals) > 1 ? "global": l:journals[0]
+  call s:open_or_switch_window(s:format_path("bujo://", l:journal_name, "tasklist.md"))
+  setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
+  call append(0, l:content)
+  setlocal readonly nomodifiable
+endfunction
+
+function! bujo#FormatFromPath(journal, collection = "index.md") abort
+  return s:format_from_path(a:journal, a:collection)
+endfunction
+
+function! bujo#GetInternalVariable(var) abort
+  return get(s:, a:var, "Failed to find " . a:var . " in s:")
+endfunction
+
 " Global wrappers made so Vader can run unit tests
 function! bujo#Vader_FormatFilename(filename) abort
   return s:format_filename(a:filename)
@@ -1116,6 +1168,3 @@ function! bujo#Vader_IsCollection(journal, collection)  abort
 	return s:is_collection(a:journal, a:collection)
 endfunction
 
-function! bujo#GetInternalVariable(var) abort
-  return get(s:, a:var, "Failed to find " . a:var . " in s:")
-endfunction

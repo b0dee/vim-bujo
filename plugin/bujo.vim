@@ -17,7 +17,7 @@ endif
 function! BujoCurrent() abort
   let l:prepend = len(g:bujo_journal_statusline_prepend) == 0 ? "": " " . g:bujo_journal_statusline_prepend
   let l:append = len(g:bujo_journal_statusline_append) == 0 ? "": " " . g:bujo_journal_statusline_append
-  return l:prepend . bujo#FormatFromPath(bujo#GetInternalVariable(s:current_journal)) . l:append
+  return l:prepend . bujo#FormatFromPath(bujo#GetInternalVariable('current_journal')) . l:append
 endfunction
 
 command! -nargs=* -bang Journal      call bujo#Journal(<bang>0, <f-args>)
@@ -41,10 +41,12 @@ command! -nargs=*       MonthlyNote  call bujo#MonthlyEntry(bujo#GetInternalVari
 
 command! -nargs=*       Backlog      call bujo#OpenBacklog(<f-args>)
 
+command! -nargs=* -bang TaskList   call bujo#ListTasks(<bang>0)
+command! -nargs=* -bang ListTasks   call bujo#ListTasks(<bang>0)
+
 " TODO
 " command! -nargs=* -bang ListEvents   call bujo#ListEvents()
 " NOTE: Bang means list tasks in ALL journals, arguments provided are used as journal or default is used 
-" command! -nargs=* -bang ListTasks   call bujo#ListTasks()
 " NOTE: Bang means list tasks in ALL journals, arguments provided are used as journal or default is used 
 " g:bujo_git_sync = v:true 
 " NOTE: This will auto push/pull if enabled and in git repo
