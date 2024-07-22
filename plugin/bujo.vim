@@ -38,7 +38,6 @@ command! -nargs=*       Backlog      call bujo#OpenBacklog(<f-args>)
 " NOTE: This will auto push/pull if enabled and in git repo
 
 " TODO - Features (CORE):
-" TODO - Replace existing window if already open, don't spam create them
 " TODO - Reflect Command
 "      - ability to have this be done automatically/ prompt (perhaps controllable so can be silenced) when
 "      - launching any bujo command

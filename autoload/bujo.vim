@@ -21,9 +21,6 @@ let s:THIS_MONTH = strftime("%m")
 if !exists('g:bujo_path')
 	let g:bujo_path = '~/repos/bujo/'
 endif
-if !exists('g:bujo_index_winsize')
-	let g:bujo_index_winsize = 30
-endif
 if !exists('g:bujo_default_journal')
   let g:bujo_default_journal = "Default"
 endif
@@ -41,8 +38,8 @@ endif
 
 " Daily Log vars
 let s:bujo_daily_filename = s:BUJO_DAILY . "_%Y-%m-%{#}.md"
-if !exists('g:bujo_daily_winsize')
-	let g:bujo_daily_winsize = 50
+if !exists('g:bujo_winsize')
+	let g:bujo_winsize = 50
 endif
 let s:bujo_daily_header =  "# %A %B %d" 
 let s:bujo_daily_task_header =  "**Tasks:**"
@@ -706,17 +703,21 @@ function! bujo#CurrentJournal() abort
   return l:prepend . s:format_from_path(s:current_journal) . l:append
 endfunction
 
-" function! s:open_or_replace_window(is_journal = v:false)
-"   let l:current_winnr = winnr()
-"   let l: = g:bujo_split_right ? "$" : "1"
-" 
-"   
-"   exe l:current_winnr . "wincmd w"
-" 
-"   exe l:current_winnr . "wincmd w"
-"   let l:winsize = l:is_journal ? g:bujo_index_winsize : g:bujo_daily_winsize
-"   return (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((l:winsize > 0)? (l:winsize*winwidth(0))/100 : -l:winsize) "new" 
-" endfunction
+function! s:open_or_switch_window(file_path) abort
+  let l:current_winnr = winnr()
+  let l:splitright = g:bujo_split_right ? "$" : "1"
+  
+  exe l:current_winnr . "wincmd w"
+  if match(expand("%:p"), expand(g:bujo_path)) >= 0
+    execute "bd %" 
+    "execute "edit " . fnameescape(a:file_path)
+    "return
+  endif
+
+  let l:winsize =  g:bujo_winsize
+  execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((l:winsize > 0)? (l:winsize*winwidth(0))/100 : -l:winsize) "new" 
+  execute "edit " . fnameescape(a:file_path)
+endfunction
 "
 " Get and set current journal (offer to create if it doesn't exist)
 function! bujo#Journal(print_current, ...) abort
@@ -764,9 +765,8 @@ function! bujo#OpenIndex(list_journals, ...) abort
     if s:mkdir_if_needed(l:journal) | return | endif
   endif
 
-  let l:cmd = (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_index_winsize > 0)? (g:bujo_index_winsize*winwidth(0))/100 : -g:bujo_index_winsize) . "new" 
   if a:list_journals
-    execute l:cmd 
+    call s:open_or_switch_window(s:format_filename(g:bujo_path, "internal", "index.md"))
     setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
     let l:content = ["# Journal Index", ""]
     for entry in readdir(expand(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f !~ "^[.]"})
@@ -776,8 +776,7 @@ function! bujo#OpenIndex(list_journals, ...) abort
     setlocal readonly nomodifiable
   else
     call s:init_journal_index(l:journal)
-    execute l:cmd 
-    execute "edit " . fnameescape(l:journal_index)
+    call s:open_or_switch_window(l:journal_index)
   endif
 endfunction
 
@@ -785,8 +784,7 @@ function! bujo#OpenDaily(...) abort
   let l:journal = a:0 == 0 ? s:current_journal : join(a:000, " ")
   let l:daily_log = s:format_path(g:bujo_path, s:format_filename(l:journal), s:format_filename(s:bujo_daily_filename))
   call s:init_daily(l:journal)
-  execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_daily_winsize > 1)? (g:bujo_daily_winsize*winwidth(0))/100 : -g:bujo_daily_winsize) "new" 
-  execute  "edit " . fnameescape(l:daily_log)
+  call s:open_or_switch_window(l:daily_log)
  
 endfunction
 " TODO - Handle displaying urgent tasks
@@ -839,8 +837,7 @@ function! bujo#OpenFuture(...) abort
   
   call s:init_future(l:year)
 
-  execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_daily_winsize > 1)? (g:bujo_daily_winsize*winwidth(0))/100 : -g:bujo_daily_winsize) "new" 
-  execute  "edit " . fnameescape(l:future_log)
+  call s:open_or_switch_window(l:future_log)
   let l:content = readfile(l:future_log)
   let l:month_index = 0
   for line in l:content
@@ -929,7 +926,7 @@ function! bujo#Collection(bang, ...) abort
   if a:0 == 0
     let l:collections = s:list_collections(a:bang)
     let l:content = s:format_list_collections(l:collections)
-    execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_index_winsize > 0)? (g:bujo_index_winsize*winwidth(0))/100 : -g:bujo_index_winsize) . "new" 
+    call s:open_or_switch_window(s:format_filename(g:bujo_path, "internal", "collections.md"))
     setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe nowrap
     " for entry in readdir(expand(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f !~ "^[.]"})
     "   call add(l:content, "- [" . s:format_initial_case(entry). "]( " . entry . "/index.md" . " )")
@@ -975,8 +972,7 @@ function! bujo#Collection(bang, ...) abort
   let l:content = [ "# " . l:collection_print_name, "", "" ]
   call writefile(l:content, l:collection_path)
 
-  execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_daily_winsize > 1)? (g:bujo_daily_winsize*winwidth(0))/100 : -g:bujo_daily_winsize) "new" 
-  execute  "edit " . fnameescape(l:collection_path)
+  call s:open_or_switch_window(l:collection_path)
 
 endfunction
 
@@ -1001,8 +997,7 @@ function! bujo#OpenBacklog(...) abort
   " Check if we need to create an entry
   " We do this before opening the split as we may want to do both
   if a:0 == 0
-    execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_daily_winsize > 1)? (g:bujo_daily_winsize*winwidth(0))/100 : -g:bujo_daily_winsize) "new" 
-    execute  "edit " . fnameescape(l:backlog)
+    s:open_or_switch_window(l:backlog)
   else
     let l:entry = substitute(join(a:000, " "), "\\(^[a-z]\\)", "\\U\\1", "g")
     let l:content = readfile(l:backlog)
@@ -1094,8 +1089,7 @@ function! bujo#OpenMonthly(...) abort
   if s:mkdir_if_needed(s:current_journal) | return | endif
   call s:init_monthly(l:month)
 
-  execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((g:bujo_daily_winsize > 1)? (g:bujo_daily_winsize*winwidth(0))/100 : -g:bujo_daily_winsize) "new" 
-  execute  "edit " . fnameescape(l:monthly_log)
+  call s:open_or_switch_window(l:monthly_log)
 endfunction
 
 function! bujo#MonthlyEntry(type, ...) abort
