@@ -27,14 +27,6 @@ endif
 if !exists('g:bujo_split_right')
   let g:bujo_split_right = &splitright
 endif
-if !exists('g:bujo_journal_statusline_prepend')
-  let g:bujo_journal_statusline_prepend = ""
-endif
-if !exists('g:bujo_journal_statusline_append')
-  let g:bujo_journal_statusline_append = "Journal"
-endif
-
-
 
 " Daily Log vars
 let s:bujo_daily_filename = s:BUJO_DAILY . "_%Y-%m-%{#}.md"
@@ -697,11 +689,6 @@ function! s:get_day_of_week(year, month, day) abort
   return (l:year_code + l:month_code + l:century_codes[a:year[0:1]] + a:day - l:leap) % 7
 endfunction
 
-function! bujo#CurrentJournal() abort
-  let l:prepend = len(g:bujo_journal_statusline_prepend) == 0 ? "": " " . g:bujo_journal_statusline_prepend
-  let l:append = len(g:bujo_journal_statusline_append) == 0 ? "": " " . g:bujo_journal_statusline_append
-  return l:prepend . s:format_from_path(s:current_journal) . l:append
-endfunction
 
 function! s:open_or_switch_window(file_path) abort
   let l:current_winnr = winnr()
