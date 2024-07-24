@@ -47,7 +47,7 @@ if !exists('g:bujo_header_entries_ordered')
 endif
 
 let s:bujo_header_entries = {
-\ s:BUJO_EVENT: {
+\ s:BUJO_EVENT : {
 \   "name": s:BUJO_EVENT,
 \   "header": s:bujo_daily_event_header,
 \   "list_char": "*",
@@ -68,7 +68,7 @@ let s:bujo_header_entries = {
 \ s:BUJO_NOTE: {
 \   "name": s:BUJO_NOTE,
 \   "header": s:bujo_daily_note_header,
-\   "list_char": "",
+\   "list_char": "*",
 \   "daily_enabled": v:true,
 \   "future_enabled": v:true,
 \   "monthly_enabled": v:true,
@@ -372,10 +372,7 @@ function! s:init_daily(journal) abort
         echoerr "Smart event creation Not implemented!"
         return
       endif
-      if s:bujo_header_entries[key]["list_char"] !=# ""
-        call add(l:content, s:bujo_header_entries[key]["list_char"] . " ")
-        call add(l:content, "")
-      endif
+      call add(l:content, "")
     endif
   endfor
 
@@ -411,7 +408,6 @@ function! s:init_future(year) abort
     for key in g:bujo_header_entries_ordered
       if s:bujo_header_entries[key]["future_enabled"]
         call add(l:content, s:bujo_header_entries[key]["header"])
-        call add(l:content, s:bujo_header_entries[key]["list_char"] . " ")
         call add(l:content, "")
       endif
     endfor
@@ -424,14 +420,10 @@ endfunction
 " check if line == "" too
 function! s:list_insert_entry(list, type_header, type_list_char, entry, stop_pattern = v:null) abort
   let l:index = 1
-  let l:list_char = a:type_list_char . (a:type_list_char == "" ? "" : " " )
+  let l:list_char = a:type_list_char . " " 
   for line in a:list
-    if a:stop_pattern isnot v:null && line ==# a:stop_pattern | break | endif
+    if a:stop_pattern isnot v:null && line ==# a:stop_pattern | return | endif
     if line ==# a:type_header
-      if l:list_char == ""
-        call insert(a:list, "", l:index)
-        let l:index += 1
-      endif
       call insert(a:list, l:list_char . a:entry, l:index)
       return a:list
     endif
@@ -444,7 +436,6 @@ function! s:list_insert_entry(list, type_header, type_list_char, entry, stop_pat
   " (leaving blank line below header)
   call insert(a:list, a:type_header, 2)
   call insert(a:list, l:list_char . a:entry, 3)
-  call insert(a:list, l:list_char, 4)
   call insert(a:list, "", 5)
   return a:list
 endfunction
@@ -456,23 +447,27 @@ endfunction
 " FIXME - Now adding lots of pre filled list entries
 function! s:list_append_entry(list, type_header, type_list_char, entry)  abort
   let l:index = 1
-  let l:list_char = a:type_list_char . (a:type_list_char == "" ? "" : " " )
+  let l:list_char = a:type_list_char . " " 
   for line in a:list
     if line ==# a:type_header
       for item in a:list[l:index:-1]
-        if item ==# l:list_char
-          if l:list_char ==# ""
-            call insert(a:list, "", l:index)
-            let l:index += 1
-          endif
+        if item !~# '^\s*' . escape(l:list_char[0], '*\/+') || (l:index + 1 == len(a:list))
           call insert(a:list, l:list_char . a:entry, l:index)
           return a:list
         endif
         let l:index += 1
       endfor
-      break
+      
+      " Edge case at EOF
+      if l:index == len(a:list)
+        call insert(a:list, l:list_char . a:entry, l:index)
+        return a:list
+      endif
+
+      " We shouldn't get to here
+      echoerr "How did we end up here then?"
     endif
-    let l:index += 1
+    let l:index += 1 
   endfor
 
   " If we reach here, we've failed to locate the header
@@ -482,18 +477,9 @@ function! s:list_append_entry(list, type_header, type_list_char, entry)  abort
   let l:line = 2
   call insert(a:list, a:type_header, l:line)
   let l:line += 1
-  if l:list_char == ""
-    " we need to prepend an empty line to keep markdown formatting
-    call insert(a:list, "", l:line)
-    let l:line += 1
-  endif
   call insert(a:list, l:list_char . a:entry, l:line)
   let l:line += 1
   call insert(a:list, l:list_char, l:line)
-  if l:list_char != ""
-    let l:line += 1
-    call insert(a:list, "", l:line)
-  endif
   return a:list
 endfunction
 
@@ -884,7 +870,7 @@ function! bujo#FutureEntry(type, providing_year, ...) abort
   " Add entry under appropriate type header
   " TODO - Make this stop at the next month's header as may just run to EOF
   let l:list_char = s:bujo_header_entries[a:type]["list_char"]
-  let l:list_char = l:list_char . (l:list_char == "" ? "" : " " )
+  let l:list_char = l:list_char . " " 
   for line in l:content[l:index: -1]
     if line ==# s:bujo_header_entries[a:type]["header"]
       for item in l:content[l:index:-1]
@@ -972,7 +958,6 @@ function! bujo#OpenBacklog(...) abort
     for key in g:bujo_header_entries_ordered
       if s:bujo_header_entries[key]["backlog_enabled"]
         call add(l:content, s:bujo_header_entries[key]["header"])
-        call add(l:content, s:bujo_header_entries[key]["list_char"] . " ")
         call add(l:content, "")
       endif
     endfor
@@ -1000,7 +985,6 @@ function! s:init_monthly(month) abort
   for header in g:bujo_header_entries_ordered
     if s:bujo_header_entries[header]["monthly_enabled"]
       call add(l:content, s:format_header(s:bujo_header_entries[header]["header"]))
-      call add(l:content, s:bujo_header_entries[header]["list_char"] . " ")
       call add(l:content, "")
     endif
   endfor
