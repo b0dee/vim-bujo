@@ -767,7 +767,7 @@ function! bujo#CreateEntry(type, is_urgent, ...) abort
 		return
 	endif
 	let l:filename = s:format_filename(s:bujo_daily_filename)
-	let l:entry = join(a:000, " ")
+	let l:entry = s:format_title_case(join(a:000, " "))
 
 	" Note entries do not have a list character. 
 	" To ensure we generate markdown that formats correctly insert
