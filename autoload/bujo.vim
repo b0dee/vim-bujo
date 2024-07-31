@@ -350,6 +350,9 @@ function! s:init_journal_index(journal) abort
   call writefile(l:content, l:journal_index)
 endfunction
 
+" TODO - Create each day entry for week
+"        - Option to disable weekends
+"        Prepopulate tasks/events from future and monthly log
 function! s:init_daily(journal) abort
   let l:formatted_daily_header = s:format_header(s:bujo_daily_header, a:journal) 
   let l:journal_dir = expand(g:bujo_path) . s:format_filename(a:journal) 
