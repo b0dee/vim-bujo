@@ -245,6 +245,12 @@ function! s:format_title_case(input) abort
   return substitute(a:input, '\<.', '\U&', "")
 endfunction
 
+function! s:format_date_with_suffix(date) abort
+  if a:date >= 10 && a:date <= 20
+    return a:date . "th"
+  endif
+  return a:date . s:date_suffixes[a:date[-1:-1]]
+endfunction
 
 function! s:format_filename(filename)  abort
   return tolower(
@@ -863,8 +869,7 @@ function! bujo#FutureEntry(type, providing_year, ...) abort
     let l:day = a:2
     let l:entry_start_index = 2 
   endif
-  let l:date_suffix = s:date_suffixes[l:day[-1:-1]]
-  let l:entry = l:day . l:date_suffix . ": " . s:format_title_case(join(a:000[l:entry_start_index:-1], " "))
+  let l:entry = s:format_date_with_suffix(l:day) . ": " . s:format_title_case(join(a:000[l:entry_start_index:-1], " "))
 
   try
     let l:month = s:bujo_months[str2nr(expr)]["short"]
