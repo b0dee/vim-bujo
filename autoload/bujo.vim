@@ -15,8 +15,6 @@ let s:BUJO_DAILY = "daily"
 let s:BUJO_BACKLOG = "backlog"
 let s:BUJO_MONTHLY = "monthly"
 let s:BUJO_FUTURE = "future"
-let s:THIS_YEAR = strftime("%Y")
-let s:THIS_MONTH = strftime("%m")
 
 if !exists('g:bujo_path')
 	let g:bujo_path = '~/repos/bujo/'
@@ -253,7 +251,7 @@ function! s:format_filename(filename)  abort
       \ substitute(
         \ substitute(
           \ substitute(strftime(s:strip_whitespace(a:filename)), " ", "_", "g"), 
-        \ '{#}', ((strftime("%d") / 7) + 1), "g"),
+        \ '{#}', ((s:get_current_day() / 7) + 1), "g"),
       \ '[!"£$%^&*;:''><\\\/|,())?\[\]]', "", "g"))
 endfunction
 
@@ -274,7 +272,7 @@ function! s:format_header(header, journal = s:format_initial_case(s:current_jour
   return strftime(substitute(a:header, "{journal}", s:format_initial_case(a:journal), "g"))
 endfunction
 
-function! s:format_header_custom_date(format, year = s:THIS_YEAR, month = s:THIS_MONTH, day = s:get_day_of_week(s:THIS_YEAR, s:THIS_MONTH, strftime("%d"))) abort
+function! s:format_header_custom_date(format, year = s:get_current_year(), month = s:get_current_month(), day = s:get_day_of_week(s:get_current_year(), s:get_current_month(), s:get_current_day())) abort
   return substitute(
           \ substitute(
             \ substitute(
@@ -355,7 +353,7 @@ endfunction
 function! s:init_daily(journal) abort
   let l:formatted_daily_header = s:format_header(s:bujo_daily_header, a:journal) 
   let l:journal_dir = expand(g:bujo_path) . s:format_filename(a:journal) 
-  let l:daily_log = l:journal_dir . "/". s:get_daily_filename(s:THIS_YEAR, s:THIS_MONTH, strftime("%d"))
+  let l:daily_log = l:journal_dir . "/". s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day())
   if filereadable(l:daily_log) && len(matchstrlist(readfile(l:daily_log), l:formatted_daily_header)) == 1
     return
   endif
@@ -396,7 +394,7 @@ function! s:init_future(year) abort
   let l:content = []
   call add(l:content, s:format_header(g:bujo_future_header))
   call add(l:content, "")
-  if s:THIS_YEAR == a:year 
+  if s:get_current_year() == a:year 
     " Skip the months that have already passed
     let l:months = s:bujo_months[strftime("%m") - 1:-1]
   else 
@@ -655,6 +653,18 @@ function! s:process_cron(expr, year, month, day, dow) abort
   return v:false
 endfunction
 
+function! s:get_current_year() abort
+  return str2nr(strftime("%y"))
+endfunction
+
+function! s:get_current_month() abort
+  return str2nr(strftime("%m"))
+endfunction
+
+function! s:get_current_day() abort
+  return str2nr(strftime("%d"))
+endfunction
+
 function! s:is_leap_year(year) abort
   return a:year % 400 == 0 || (a:year % 100 != 0 && a:year % 4 == 0)
 endfunction
@@ -790,7 +800,7 @@ endfunction
 
 function! bujo#OpenDaily(...) abort
   let l:journal = a:0 == 0 ? s:current_journal : join(a:000, " ")
-  let l:daily_log = s:format_path(g:bujo_path, s:format_filename(l:journal), s:get_daily_filename(s:THIS_YEAR, s:THIS_MONTH, strftime("%d"))
+  let l:daily_log = s:format_path(g:bujo_path, s:format_filename(l:journal), s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day())
   call s:init_daily(l:journal)
   call s:open_or_switch_window(l:daily_log)
  
@@ -810,7 +820,7 @@ function! bujo#CreateEntry(type, is_urgent, ...) abort
 
   let l:journal = s:current_journal
   let l:journal_dir = s:format_path(expand(g:bujo_path), l:journal)
-  let l:daily_log = s:format_path(l:journal_dir, s:get_daily_filename(s:THIS_YEAR, s:THIS_MONTH, strftime("%d")))
+  let l:daily_log = s:format_path(l:journal_dir, s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day()))
 
   call s:init_daily(l:journal)
   let l:content = readfile(l:daily_log)
@@ -824,7 +834,7 @@ function! bujo#OpenFuture(...) abort
   if s:mkdir_if_needed(s:current_journal) | return | endif
 
   if a:0 == 0
-    let l:year = s:THIS_YEAR
+    let l:year = s:get_current_year()
   else
     let l:year = a:1 
     let l:future_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_FUTURE . "_" . l:year . ".md")
@@ -832,8 +842,8 @@ function! bujo#OpenFuture(...) abort
   if a:0 == 2
     let l:month = a:2
   else 
-    if l:year == s:THIS_YEAR
-      let l:month = s:THIS_MONTH
+    if l:year == s:get_current_year()
+      let l:month = s:get_current_month()
     else
       let l:month = "Jan"
     endif
@@ -1011,11 +1021,11 @@ endfunction
 
 function! s:init_monthly(month) abort
   let l:journal_dir = s:format_path(g:bujo_path, s:current_journal)
-  let l:monthly_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_MONTHLY . "_" . s:THIS_YEAR . "_" . a:month . ".md")
+  let l:monthly_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_MONTHLY . "_" . s:get_current_year() . "_" . a:month . ".md")
   if filereadable(l:monthly_log)
     return
   endif
-  let l:content = [ s:format_header_custom_date(g:bujo_monthly_header, s:THIS_YEAR, a:month), "" ]
+  let l:content = [ s:format_header_custom_date(g:bujo_monthly_header, s:get_current_year(), a:month), "" ]
   for header in g:bujo_header_entries_ordered
     if s:bujo_header_entries[header]["monthly_enabled"]
       call add(l:content, s:format_header(s:bujo_header_entries[header]["header"]))
@@ -1043,11 +1053,11 @@ function! s:init_monthly(month) abort
       call add(l:content, l:row)
     endif
     for day in range(1, s:bujo_months[a:month - 1]["days"])
-      let l:row = "| " . s:bujo_days[s:get_day_of_week(s:THIS_YEAR, a:month, day)]["letter"] . day . "." . repeat(" ", len(l:day_header) - (day / 10 < 1 ? 3: 4)) . " |"
+      let l:row = "| " . s:bujo_days[s:get_day_of_week(s:get_current_year(), a:month, day)]["letter"] . day . "." . repeat(" ", len(l:day_header) - (day / 10 < 1 ? 3: 4)) . " |"
       for header in g:bujo_monthly_table_headers
         let l:padding = ((len(header["title"]) + 2) / 2) - (len(l:empty_checkbox) / 2)
         let l:cron_expr = header["cron"]
-        if s:process_cron(l:cron_expr, s:THIS_YEAR, a:month, day, s:get_day_of_week(s:THIS_YEAR, a:month, day))
+        if s:process_cron(l:cron_expr, s:get_current_year(), a:month, day, s:get_day_of_week(s:get_current_year(), a:month, day))
           let l:cell_content = l:empty_checkbox 
         else
           let l:cell_content = repeat(" ", len(l:empty_checkbox))
@@ -1084,10 +1094,10 @@ function! bujo#OpenMonthly(...) abort
       endfor
     endif
   else
-    let l:month = s:THIS_MONTH
+    let l:month = s:get_current_month()
   endif
 
-  let l:monthly_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_MONTHLY . "_" . s:THIS_YEAR . "_" . l:month . ".md")
+  let l:monthly_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_MONTHLY . "_" . s:get_current_year() . "_" . l:month . ".md")
 
   if s:mkdir_if_needed(s:current_journal) | return | endif
   call s:init_monthly(l:month)
@@ -1097,8 +1107,8 @@ endfunction
 
 function! bujo#MonthlyEntry(type, ...) abort
   " FIXME - Notes add a lot of extra space around them
-  let l:month = s:THIS_MONTH
-  let l:monthly_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_MONTHLY . "_" . s:THIS_YEAR . "_" . l:month . ".md")
+  let l:month = s:get_current_month()
+  let l:monthly_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_MONTHLY . "_" . s:get_current_year() . "_" . l:month . ".md")
   if s:mkdir_if_needed(s:current_journal) | return | endif
   call s:init_monthly(l:month)
   let l:entry = substitute(join(a:000[1:-1], " "), "\\(^[a-z]\\)", "\\U\\1", "")
