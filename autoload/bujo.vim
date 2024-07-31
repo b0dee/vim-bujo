@@ -358,6 +358,25 @@ function! s:init_daily(journal) abort
     return
   endif
 
+  " TODO - Support migration
+  " On initialising each week, get the last daily journal file (need to
+  " support going on holiday for 2 weeks and coming back, should show last
+  " daily log not not find the last weeks one)
+  " This needs to (based on user choice v/h) split  showing past file and new
+  " file, focus the old file, motions in this file migrate tasks accordingly
+  " IMPORTANT: Only needs to show unfinished tasks
+  " Motions: 
+  "   getting it working: 
+  "     `>>` move to new daily log
+  "     `<<` prompt user for month and move to future log
+  "     `tbd` move to backlog
+  "   getting it working: 
+  "     `>>` prompt for day (default to today) and put under that daily header
+  "          in new daily log
+  "     `<<` ability to specify year (will be needed when close to year end
+  "          i.e. December) and need to put things in for new year
+  "     `tbd` move to custom collection?
+
   let l:content = [l:formatted_daily_header, ""]
 
   if s:mkdir_if_needed(a:journal) | return | endif
