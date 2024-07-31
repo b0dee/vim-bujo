@@ -25,6 +25,9 @@ endif
 if !exists('g:bujo_split_right')
   let g:bujo_split_right = &splitright
 endif
+if !exists('g:bujo_auto_reflection')
+  let g:bujo_auto_reflection = v:true
+endif
 
 " Daily Log vars
 let s:bujo_daily_filename = s:BUJO_DAILY . "_%Y-%m-%w.md"
@@ -697,7 +700,11 @@ function! s:open_or_switch_window(file_path) abort
   execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((l:winsize > 0)? (l:winsize*winwidth(0))/100 : -l:winsize) "new" 
   execute "edit " . fnameescape(a:file_path)
 endfunction
-"
+
+" TODO #4
+function! s:fix_index_collection_links(journal) abort
+endfunction
+
 " Get and set current journal (offer to create if it doesn't exist)
 function! bujo#Journal(print_current, ...) abort
 	let l:journals = s:list_journals()
@@ -755,8 +762,13 @@ function! bujo#OpenIndex(list_journals, ...) abort
     setlocal readonly nomodifiable
   else
     call s:init_journal_index(l:journal)
+    call s:fix_index_collection_links(l:journal)
     call s:open_or_switch_window(l:journal_index)
   endif
+endfunction
+
+function! bujo#OpenMigration(...) abort
+  
 endfunction
 
 " TODO - Support migration
@@ -785,7 +797,7 @@ function! bujo#OpenDaily(...) abort
   " enabled?
   let l:log_exists = filereadable(l:daily_log)
   if !l:log_exists && g:bujo_auto_reflection
-
+    return bujo#OpenMigration()
   endif
 
   call s:open_or_switch_window(l:daily_log)
