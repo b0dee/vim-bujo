@@ -355,7 +355,7 @@ endfunction
 function! s:init_daily(journal) abort
   let l:formatted_daily_header = s:format_header(s:bujo_daily_header, a:journal) 
   let l:journal_dir = expand(g:bujo_path) . s:format_filename(a:journal) 
-  let l:daily_log = l:journal_dir . "/". s:format_filename(s:bujo_daily_filename)
+  let l:daily_log = l:journal_dir . "/". s:get_daily_filename(s:THIS_YEAR, s:THIS_MONTH, strftime("%d"))
   " FIXME TODO - init_daily doesn't support future dates which is planned to be
   " added (future dates are at the top of the file, need to check whole file
   " for its existence)
@@ -793,7 +793,7 @@ endfunction
 
 function! bujo#OpenDaily(...) abort
   let l:journal = a:0 == 0 ? s:current_journal : join(a:000, " ")
-  let l:daily_log = s:format_path(g:bujo_path, s:format_filename(l:journal), s:format_filename(s:bujo_daily_filename))
+  let l:daily_log = s:format_path(g:bujo_path, s:format_filename(l:journal), s:get_daily_filename(s:THIS_YEAR, s:THIS_MONTH, strftime("%d"))
   call s:init_daily(l:journal)
   call s:open_or_switch_window(l:daily_log)
  
@@ -804,7 +804,6 @@ function! bujo#CreateEntry(type, is_urgent, ...) abort
 		echoerr "CreateEntry requires at least 1 additional argument for the entry value."
 		return
 	endif
-	let l:filename = s:format_filename(s:bujo_daily_filename)
 	let l:entry = s:format_title_case(join(a:000, " "))
 
 	" Note entries do not have a list character. 
@@ -814,7 +813,7 @@ function! bujo#CreateEntry(type, is_urgent, ...) abort
 
   let l:journal = s:current_journal
   let l:journal_dir = s:format_path(expand(g:bujo_path), l:journal)
-  let l:daily_log = s:format_path(l:journal_dir, l:filename)
+  let l:daily_log = s:format_path(l:journal_dir, s:get_daily_filename(s:THIS_YEAR, s:THIS_MONTH, strftime("%d")))
 
   call s:init_daily(l:journal)
   let l:content = readfile(l:daily_log)
