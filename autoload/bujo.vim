@@ -356,10 +356,7 @@ function! s:init_daily(journal) abort
   let l:formatted_daily_header = s:format_header(s:bujo_daily_header, a:journal) 
   let l:journal_dir = expand(g:bujo_path) . s:format_filename(a:journal) 
   let l:daily_log = l:journal_dir . "/". s:get_daily_filename(s:THIS_YEAR, s:THIS_MONTH, strftime("%d"))
-  " FIXME TODO - init_daily doesn't support future dates which is planned to be
-  " added (future dates are at the top of the file, need to check whole file
-  " for its existence)
-  if filereadable(l:daily_log) && readfile(l:daily_log, "", 1)[0] ==# l:formatted_daily_header
+  if filereadable(l:daily_log) && len(matchstrlist(readfile(l:daily_log), l:formatted_daily_header)) == 1
     return
   endif
 
