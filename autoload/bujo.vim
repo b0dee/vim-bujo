@@ -354,28 +354,11 @@ function! s:init_daily(journal) abort
   let l:formatted_daily_header = s:format_header(s:bujo_daily_header, a:journal) 
   let l:journal_dir = expand(g:bujo_path) . s:format_filename(a:journal) 
   let l:daily_log = l:journal_dir . "/". s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day())
-  if filereadable(l:daily_log) && len(matchstrlist(readfile(l:daily_log), l:formatted_daily_header)) == 1
+  let l:log_exists = filereadable(l:daily_log)
+
+  if l:log_exists && len(matchstrlist(readfile(l:daily_log), l:formatted_daily_header)) == 1
     return
   endif
-
-  " TODO - Support migration
-  " On initialising each week, get the last daily journal file (need to
-  " support going on holiday for 2 weeks and coming back, should show last
-  " daily log not not find the last weeks one)
-  " This needs to (based on user choice v/h) split  showing past file and new
-  " file, focus the old file, motions in this file migrate tasks accordingly
-  " IMPORTANT: Only needs to show unfinished tasks
-  " Motions: 
-  "   getting it working: 
-  "     `>>` move to new daily log
-  "     `<<` prompt user for month and move to future log
-  "     `tbd` move to backlog
-  "   getting it working: 
-  "     `>>` prompt for day (default to today) and put under that daily header
-  "          in new daily log
-  "     `<<` ability to specify year (will be needed when close to year end
-  "          i.e. December) and need to put things in for new year
-  "     `tbd` move to custom collection?
 
   let l:content = [l:formatted_daily_header, ""]
 
@@ -395,7 +378,7 @@ function! s:init_daily(journal) abort
   endfor
 
   " Does the containing file have other daily log entries?
-  if filereadable(l:daily_log) && readfile(l:daily_log, "", 1)[0] !=# l:formatted_daily_header
+  if readfile(l:daily_log, "", 1)[0] !=# l:formatted_daily_header
     " Add any pre-existing content to the file
     call extend(l:content, readfile(l:daily_log))
   endif
@@ -767,10 +750,35 @@ function! bujo#OpenIndex(list_journals, ...) abort
   endif
 endfunction
 
+" TODO - Support migration
+" On initialising each week, get the last daily journal file (need to
+" support going on holiday for 2 weeks and coming back, should show last
+" daily log not not find the last weeks one)
+" This needs to (based on user choice v/h) split  showing past file and new
+" file, focus the old file, motions in this file migrate tasks accordingly
+" IMPORTANT: Only needs to show unfinished tasks
+" Motions: 
+"   getting it working: 
+"     `>>` move to new daily log
+"     `<<` prompt user for month and move to future log
+"     `tbd` move to backlog
+"   getting it working: 
+"     `>>` prompt for day (default to today) and put under that daily header
+"          in new daily log
+"     `<<` ability to specify year (will be needed when close to year end
+"          i.e. December) and need to put things in for new year
+"     `tbd` move to custom collection?
 function! bujo#OpenDaily(...) abort
   let l:journal = a:0 == 0 ? s:current_journal : join(a:000, " ")
   let l:daily_log = s:format_path(g:bujo_path, s:format_filename(l:journal), s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day())
   call s:init_daily(l:journal)
+  " We're initialising this weeks daily log, do we have auto reflection
+  " enabled?
+  let l:log_exists = filereadable(l:daily_log)
+  if !l:log_exists && g:bujo_auto_reflection
+
+  endif
+
   call s:open_or_switch_window(l:daily_log)
  
 endfunction
