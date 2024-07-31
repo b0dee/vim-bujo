@@ -29,7 +29,7 @@ if !exists('g:bujo_split_right')
 endif
 
 " Daily Log vars
-let s:bujo_daily_filename = s:BUJO_DAILY . "_%Y-%m-%{#}.md"
+let s:bujo_daily_filename = s:BUJO_DAILY . "_%Y-%m-%w.md"
 if !exists('g:bujo_winsize')
 	let g:bujo_winsize = 50
 endif
@@ -180,6 +180,10 @@ let s:bujo_index_entries = [
 " Add in custom index entries from global list
 if exists("g:bujo_index_entries") 
   call extend(s:bujo_index_entries, g:bujo_index_entries)
+endif
+
+if !exists('g:bujo_week_start') || g:bujo_week_start < 0 || g:bujo_week_start > 7
+  let g:bujo_week_start = 1 
 endif
 
 let s:date_suffixes = {
@@ -673,6 +677,40 @@ function! s:get_day_of_week(year, month, day) abort
   let l:month_code = s:bujo_months[a:month - 1]["code"]
   let l:leap = s:is_leap_year(a:year) && (a:month == 0 || a:month == 1) ? 1: 0 
   return (l:year_code + l:month_code + l:century_codes[a:year[0:1]] + a:day - l:leap) % 7
+endfunction
+
+function! s:get_week_of_month(year,month,day) abort
+  let l:first_day_of_month = s:get_day_of_week(a:year,a:month,1)
+  let l:first_week_start_of_month = g:bujo_week_start >= l:first_day_of_month ? g:bujo_week_start - l:first_day_of_month : (7 % l:first_day_of_month) + g:bujo_week_start
+  if l:first_week_start_of_month < a:day
+    return ((a:day - l:first_week_start_of_month) / 7) + 1
+  else 
+    let l:month_days = s:is_leap_year(a:year) && a:month == 2 ? 29 : s:bujo_months[a:month-1]["days"]
+    return s:get_week_of_month(a:year,a:month -1, a:day + l:month_days)
+  endif
+endfunction
+
+function! s:get_daily_filename(year, month, day) abort
+  let l:first_day_of_month = s:get_day_of_week(a:year,a:month,1)
+  let l:first_week_start_of_month = g:bujo_week_start >= l:first_day_of_month ? g:bujo_week_start - l:first_day_of_month : (7 % l:first_day_of_month) + g:bujo_week_start
+  let l:week_of_month = s:get_week_of_month(a:year, a:month, a:day)
+  if a:day < l:first_week_start_of_month
+    let l:month = a:month-1
+  else 
+    let l:month = a:month
+  endif
+  return s:format_date_str(s:bujo_daily_filename, a:year, l:month, a:day, l:week_of_month)
+endfunction
+
+
+function! s:format_date_str(in, year, month, day = v:null, week_of_month=  v:null) abort
+  return substitute(
+        \ substitute(
+          \ substitute(
+            \ substitute(a:in, "%d", a:day, "g"),
+            \ "%w", a:week_of_month, "g"),
+          \ "%m", a:month, "g"),
+        \ "%y", a:year, "g")
 endfunction
 
 
