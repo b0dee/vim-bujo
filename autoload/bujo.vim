@@ -556,6 +556,28 @@ function! s:interactive_journal_select(journal_list) abort
       return s:set_current_journal(s:get_formatted_journal(a:journal_list[l:result - 1]))
 endfunction
 
+function! s:process_cron_interval(interval) abort
+  let l:arr = []
+  let l:intervals = split(a:interval, ",")
+  for interval in l:intervals
+    if match(interval, "-") != -1
+      let l:split = split(interval, "-")
+      let l:lhs = l:split[0]
+      let l:rhs = l:split[1]
+      for range_interval in range(l:lhs, l:rhs)
+        call add(l:arr, range_interval)
+      endfor
+    else
+      if str2nr(interval) != 0
+        call add(l:arr, str2nr(interval))
+      else
+        call add(l:arr, interval)
+      endif
+    endif
+  endfor
+
+endfunction
+
 function! s:process_cron(expr, year, month, day, dow) abort
   " TODO - This doesn't handle division styling
   " i.e. */2 for every other day 
@@ -565,82 +587,10 @@ function! s:process_cron(expr, year, month, day, dow) abort
   if len(l:expr_list) < 4 
     call (extend(l:expr_list, repeat(["*"], 4 - len(l:expr_list))))
   endif
-  let l:days = []
-  let l:day = l:expr_list[0]
-  let l:day = split(l:day, ",")
-  for day in l:day
-    if match(day, "-") != -1
-      let l:split = split(day, "-")
-      let l:lhs = l:split[0]
-      let l:rhs = l:split[1]
-      for range_day in range(l:lhs, l:rhs)
-        call add(l:days, range_day)
-      endfor
-    else
-      if str2nr(day) != 0
-        call add(l:days, str2nr(day))
-      else
-        call add(l:days, day)
-      endif
-    endif
-  endfor
-  let l:months = []
-  let l:month = l:expr_list[1]
-  let l:month = split(l:month, ",")
-  for month in l:month
-    if match(month, "-") != -1
-      let l:split = split(month, "-")
-      let l:lhs = l:split[0]
-      let l:rhs = l:split[1]
-      for range_month in range(l:lhs, l:rhs)
-        call add(l:months, range_month)
-      endfor
-    else
-      if str2nr(month) != 0
-        call add(l:months, str2nr(month))
-      else
-        call add(l:months, month)
-      endif
-    endif
-  endfor
-  let l:years = []
-  let l:year = l:expr_list[2]
-  let l:year = split(l:year, ",")
-  for year in l:year
-    if match(year, "-") != -1
-      let l:split = split(year, "-")
-      let l:lhs = l:split[0]
-      let l:rhs = l:split[1]
-      for range_year in range(l:lhs, l:rhs)
-        if str2nr(year) != 0
-          call add(l:years, str2nr(year))
-        else
-          call add(l:years, year)
-        endif
-      endfor
-    else
-      call add(l:years, year)
-    endif
-  endfor
-  let l:dows = []
-  let l:dow = l:expr_list[3]
-  let l:dow = split(l:dow, ",")
-  for dow in l:dow
-    if match(dow, "-") != -1
-      let l:split = split(dow, "-")
-      let l:lhs = l:split[0]
-      let l:rhs = l:split[1]
-      for range_dow in range(l:lhs, l:rhs)
-        call add(l:dows, range_dow)
-      endfor
-    else
-      if str2nr(dow) != 0
-        call add(l:dows, str2nr(dow))
-      else
-        call add(l:dows, dow)
-      endif
-    endif
-  endfor
+  let l:days   = s:process_cron_interval(l:expr_list[0])
+  let l:months = s:process_cron_interval(l:expr_list[1])
+  let l:years  = s:process_cron_interval(l:expr_list[2])
+  let l:dows   = s:process_cron_interval(l:expr_list[3])
   if index(l:years, "*") >= 0 || index(l:years, a:year) >= 0
     if index(l:months, "*") >= 0 ||  index(l:months, a:month) >= 0
       if index(l:days, "*") >= 0 ||  index(l:days, a:day) >= 0
