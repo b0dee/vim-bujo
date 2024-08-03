@@ -276,7 +276,7 @@ function! s:format_header(header, journal = s:format_initial_case(s:current_jour
   return strftime(substitute(a:header, "{journal}", s:format_initial_case(a:journal), "g"))
 endfunction
 
-function! s:format_header_custom_date(format, year = s:get_current_year(), month = s:get_current_month(), day = s:get_day_of_week(s:get_current_year(), s:get_current_month(), s:get_current_day())) abort
+function! s:format_header_custom_date(format, year, month, day) abort
   return substitute(
           \ substitute(
             \ substitute(
@@ -367,28 +367,30 @@ function! s:init_daily(journal) abort
     return
   endif
 
-  let l:content = [l:formatted_daily_header, ""]
 
   if s:mkdir_if_needed(a:journal) | return | endif
 
-  for key in g:bujo_header_entries_ordered
-    if s:bujo_header_entries[key]["daily_enabled"]
-      call add(l:content, s:bujo_header_entries[key]["header"])
-      if g:bujo_daily_include_event_header == 2
-      " TODO - implement smart event inclusion in daily log
-      " Will likely come after calendar integration, need a way of finding all live events
-        echoerr "Smart event creation Not implemented!"
-        return
+  let l:date = s:get_current_day()
+  let l:dow = s:get_day_of_week(s:get_current_year(), s:get_current_month(), l:date)
+  let l:log_content = []
+  for day in range(0, 7 % l:dow)
+    let l:day_header = s:format_header_custom_date(l:formatted_daily_header, s:get_current_year(), s:get_current_month(), l:date + day)
+    echom l:day_header
+    let l:content = [l:day_header, ""]
+    for key in g:bujo_header_entries_ordered
+      if s:bujo_header_entries[key]["daily_enabled"]
+        call add(l:content, s:bujo_header_entries[key]["header"])
+        if g:bujo_daily_include_event_header == 2
+        " TODO - implement smart event inclusion in daily log
+        " Will likely come after calendar integration, need a way of finding all live events
+          echoerr "Smart event creation Not implemented!"
+          return
+        endif
+        call add(l:content, "")
       endif
-      call add(l:content, "")
-    endif
+    endfor
+    call extend(l:log_content, l:content)
   endfor
-
-  " Does the containing file have other daily log entries?
-  if readfile(l:daily_log, "", 1)[0] !=# l:formatted_daily_header
-    " Add any pre-existing content to the file
-    call extend(l:content, readfile(l:daily_log))
-  endif
 
   " Write output to file
   call writefile(l:content, l:daily_log)
@@ -524,6 +526,11 @@ function! s:format_list_collections(collections) abort
     return l:content
 endfunction
 
+function! s:formatted_daily_header(day, date) abort
+  return s:format_date_str(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), a:date, a:day)
+  let l:formatted_daily_header = s:format_header(s:bujo_daily_header, a:journal) 
+endfunction
+
 function! s:is_collection(journal, collection)  abort
 	try
 		let l:collections = readdir(s:format_path(expand(g:bujo_path), s:format_filename(a:journal)), {f -> f !~ '\(' . s:BUJO_DAILY . '\|' . s:BUJO_MONTHLY . '\|' . s:BUJO_FUTURE . '\|' . s:BUJO_BACKLOG. '\)'})
@@ -613,15 +620,15 @@ function! s:process_cron(expr, year, month, day, dow) abort
 endfunction
 
 function! s:get_current_year() abort
-  return str2nr(strftime("%y"))
+  return strftime("%Y")
 endfunction
 
 function! s:get_current_month() abort
-  return str2nr(strftime("%m"))
+  return strftime("%m")
 endfunction
 
 function! s:get_current_day() abort
-  return str2nr(strftime("%d"))
+  return strftime("%d")
 endfunction
 
 function! s:is_leap_year(year) abort
@@ -676,7 +683,7 @@ function! s:format_date_str(in, year, month, day = v:null, week_of_month=  v:nul
             \ substitute(a:in, "%d", a:day, "g"),
             \ "%w", a:week_of_month, "g"),
           \ "%m", a:month, "g"),
-        \ "%y", a:year, "g")
+        \ "%Y", a:year, "g")
 endfunction
 
 
@@ -786,7 +793,7 @@ endfunction
 "     `tbd` move to custom collection?
 function! bujo#OpenDaily(...) abort
   let l:journal = a:0 == 0 ? s:current_journal : join(a:000, " ")
-  let l:daily_log = s:format_path(g:bujo_path, s:format_filename(l:journal), s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day())
+  let l:daily_log = s:format_path(g:bujo_path, s:format_filename(l:journal), s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day()))
   call s:init_daily(l:journal)
   " We're initialising this weeks daily log, do we have auto reflection
   " enabled?
