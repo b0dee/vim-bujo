@@ -144,9 +144,6 @@ endif
 
 " Index vars
 let s:bujo_index_header = "# {journal} Index"
-if !exists('g:bujo_index_list_char')
-	let g:bujo_index_list_char = "{#}"
-endif
 if !exists('g:bujo_index_enable_future')
 	let g:bujo_index_enable_future = v:true
 endif
@@ -258,9 +255,7 @@ endfunction
 function! s:format_filename(filename)  abort
   return tolower(
       \ substitute(
-        \ substitute(
-          \ substitute(strftime(s:strip_whitespace(a:filename)), " ", "_", "g"), 
-        \ '{#}', ((s:get_current_day() / 7) + 1), "g"),
+        \ substitute(strftime(s:strip_whitespace(a:filename)), " ", "_", "g"), 
       \ '[!"£$%^&*;:''><\\\/|,())?\[\]]', "", "g"))
 endfunction
 
@@ -354,7 +349,7 @@ function! s:init_journal_index(journal) abort
   let l:counter = 0
   for key in s:bujo_index_entries
     let l:counter += 1
-    call add(l:content, substitute(g:bujo_index_list_char, "{#}", l:counter . ".", "g") . " [" . key["name"] . "](" . key["file"] . ")")
+    call add(l:content, l:counter . ".", "g") . " [" . key["name"] . "](" . key["file"] . ")")
   endfor
   call writefile(l:content, l:journal_index)
 endfunction
@@ -970,12 +965,12 @@ function! bujo#Collection(bang, ...) abort
     for line in l:content[2:-1]
       let l:counter += 1
       let l:collection_header = ". [" . l:collection_print_name . "](" . l:collection_index_link . ")"
-      if line !~# substitute(g:bujo_index_list_char, "{#}", l:counter . ". ", "g") 
-        call insert(l:content, substitute(g:bujo_index_list_char, "{#}", l:counter, "g") . l:collection_header, l:counter + 2)
+      if line !~# l:counter . ". "
+        call insert(l:content, l:counter . l:collection_header, l:counter + 2)
         break
       " Account for the case where we are at EOF and no empty newline
       elseif line ==# l:content[0] || len(l:content) == l:counter + 2
-        call add(l:content, substitute(g:bujo_index_list_char, "{#}", l:counter + 1, "g") . l:collection_header)
+        call add(l:content, l:counter + 1 . l:collection_header)
       endif
     endfor
     call writefile(l:content, l:journal_index)
