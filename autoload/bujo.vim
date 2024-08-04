@@ -28,6 +28,9 @@ endif
 if !exists('g:bujo_auto_reflection')
   let g:bujo_auto_reflection = v:true
 endif
+if !exists('g:bujo_daily_skip_weekend')
+  let g:bujo_daily_skip_weekend = v:false
+endif
 
 " Daily Log vars
 let s:bujo_daily_filename = s:BUJO_DAILY . "_%Y-%m-%w.md"
@@ -181,7 +184,7 @@ if exists("g:bujo_index_entries")
 endif
 
 if !exists('g:bujo_week_start') || g:bujo_week_start < 0 || g:bujo_week_start > 7
-  let g:bujo_week_start = 1 
+  let g:bujo_week_start = 4 
 endif
 
 let s:date_suffixes = {
@@ -277,17 +280,24 @@ function! s:format_header(header, journal = s:format_initial_case(s:current_jour
 endfunction
 
 function! s:format_header_custom_date(format, year, month, day) abort
+  echom "Provided: Year: " . a:year . " Month: " . a:month . " Day: " . a:day
+  let l:dow = s:get_day_of_week(a:year,a:month,a:day)
+  echom "Produces Day of Week: " . l:dow
   return substitute(
           \ substitute(
             \ substitute(
               \ substitute(
                 \ substitute(
-                  \ substitute(a:format, "{journal}", s:format_initial_case(s:current_journal), "g"), 
-                  \ "%Y", a:year, "g"),
+                  \ substitute(
+                    \ substitute(
+                      \ substitute(a:format, "{journal}", s:format_initial_case(s:current_journal), "g"), 
+                      \ "%Y", a:year, "g"),
+                    \ "%m", a:month, "g"),
+                  \ "%d", a:day, "g"),
                 \ "%B", s:bujo_months[a:month - 1]["long"], "g"),
               \ "%b", s:bujo_months[a:month - 1]["short"], "g"),
-            \ "%A", s:bujo_days[a:day - 1]["long"], "g"),
-          \ "%a", s:bujo_days[a:day - 1]["short"], "g")
+            \ "%A", s:bujo_days[l:dow]["long"], "g"),
+          \ "%a", s:bujo_days[l:dow]["short"], "g")
 endfunction
 
 function! s:format_path(...) abort
@@ -373,9 +383,9 @@ function! s:init_daily(journal) abort
   let l:date = s:get_current_day()
   let l:dow = s:get_day_of_week(s:get_current_year(), s:get_current_month(), l:date)
   let l:log_content = []
-  for day in range(0, 7 % l:dow)
+  for day in range(0, (7 % l:dow) + g:bujo_week_start)
+    echom "l:date (" . l:date . ") + day (" . day . ") = " . (l:date + day)
     let l:day_header = s:format_header_custom_date(l:formatted_daily_header, s:get_current_year(), s:get_current_month(), l:date + day)
-    echom l:day_header
     let l:content = [l:day_header, ""]
     for key in g:bujo_header_entries_ordered
       if s:bujo_header_entries[key]["daily_enabled"]
@@ -389,11 +399,12 @@ function! s:init_daily(journal) abort
         call add(l:content, "")
       endif
     endfor
-    call extend(l:log_content, l:content)
+    echom l:content
+    call extend(l:log_content, l:content, 0)
   endfor
 
   " Write output to file
-  call writefile(l:content, l:daily_log)
+  call writefile(l:log_content, l:daily_log)
 endfunction
 
 function! s:init_future(year) abort
