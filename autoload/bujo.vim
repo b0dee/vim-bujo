@@ -28,6 +28,9 @@ endif
 if !exists('g:bujo_auto_reflection')
   let g:bujo_auto_reflection = v:true
 endif
+if !exists('g:bujo_daily_skip_weekend')
+  let g:bujo_daily_skip_weekend = v:false
+endif
 
 " Daily Log vars
 let s:bujo_daily_filename = s:BUJO_DAILY . "_%Y-%m-%w.md"
@@ -144,9 +147,6 @@ endif
 
 " Index vars
 let s:bujo_index_header = "# {journal} Index"
-if !exists('g:bujo_index_list_char')
-	let g:bujo_index_list_char = "{#}"
-endif
 if !exists('g:bujo_index_enable_future')
 	let g:bujo_index_enable_future = v:true
 endif
@@ -184,7 +184,7 @@ if exists("g:bujo_index_entries")
 endif
 
 if !exists('g:bujo_week_start') || g:bujo_week_start < 0 || g:bujo_week_start > 7
-  let g:bujo_week_start = 1 
+  let g:bujo_week_start = 4 
 endif
 
 let s:date_suffixes = {
@@ -258,9 +258,7 @@ endfunction
 function! s:format_filename(filename)  abort
   return tolower(
       \ substitute(
-        \ substitute(
-          \ substitute(strftime(s:strip_whitespace(a:filename)), " ", "_", "g"), 
-        \ '{#}', ((s:get_current_day() / 7) + 1), "g"),
+        \ substitute(strftime(s:strip_whitespace(a:filename)), " ", "_", "g"), 
       \ '[!"£$%^&*;:''><\\\/|,())?\[\]]', "", "g"))
 endfunction
 
@@ -281,18 +279,25 @@ function! s:format_header(header, journal = s:format_initial_case(s:current_jour
   return strftime(substitute(a:header, "{journal}", s:format_initial_case(a:journal), "g"))
 endfunction
 
-function! s:format_header_custom_date(format, year = s:get_current_year(), month = s:get_current_month(), day = s:get_day_of_week(s:get_current_year(), s:get_current_month(), s:get_current_day())) abort
+function! s:format_header_custom_date(format, year, month, day) abort
+  echom "Provided: Year: " . a:year . " Month: " . a:month . " Day: " . a:day
+  let l:dow = s:get_day_of_week(a:year,a:month,a:day)
+  echom "Produces Day of Week: " . l:dow
   return substitute(
           \ substitute(
             \ substitute(
               \ substitute(
                 \ substitute(
-                  \ substitute(a:format, "{journal}", s:format_initial_case(s:current_journal), "g"), 
-                  \ "%Y", a:year, "g"),
+                  \ substitute(
+                    \ substitute(
+                      \ substitute(a:format, "{journal}", s:format_initial_case(s:current_journal), "g"), 
+                      \ "%Y", a:year, "g"),
+                    \ "%m", a:month, "g"),
+                  \ "%d", a:day, "g"),
                 \ "%B", s:bujo_months[a:month - 1]["long"], "g"),
               \ "%b", s:bujo_months[a:month - 1]["short"], "g"),
-            \ "%A", s:bujo_days[a:day - 1]["long"], "g"),
-          \ "%a", s:bujo_days[a:day - 1]["short"], "g")
+            \ "%A", s:bujo_days[l:dow]["long"], "g"),
+          \ "%a", s:bujo_days[l:dow]["short"], "g")
 endfunction
 
 function! s:format_path(...) abort
@@ -354,7 +359,7 @@ function! s:init_journal_index(journal) abort
   let l:counter = 0
   for key in s:bujo_index_entries
     let l:counter += 1
-    call add(l:content, substitute(g:bujo_index_list_char, "{#}", l:counter . ".", "g") . " [" . key["name"] . "](" . key["file"] . ")")
+    call add(l:content, l:counter . ".", "g") . " [" . key["name"] . "](" . key["file"] . ")")
   endfor
   call writefile(l:content, l:journal_index)
 endfunction
@@ -368,35 +373,34 @@ function! s:init_daily(journal) abort
   let l:daily_log = l:journal_dir . "/". s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day())
   let l:log_exists = filereadable(l:daily_log)
 
-  if l:log_exists && len(matchstrlist(readfile(l:daily_log), l:formatted_daily_header)) == 1
-    return
-  endif
-
-  let l:content = [l:formatted_daily_header, ""]
+  if l:log_exists && len(matchstrlist(readfile(l:daily_log), l:formatted_daily_header)) == 1 | return | endif
 
   if s:mkdir_if_needed(a:journal) | return | endif
 
-  for key in g:bujo_header_entries_ordered
-    if s:bujo_header_entries[key]["daily_enabled"]
-      call add(l:content, s:bujo_header_entries[key]["header"])
-      if g:bujo_daily_include_event_header == 2
-      " TODO - implement smart event inclusion in daily log
-      " Will likely come after calendar integration, need a way of finding all live events
-        echoerr "Smart event creation Not implemented!"
-        return
+  let l:date = s:get_current_day()
+  let l:dow = s:get_day_of_week(s:get_current_year(), s:get_current_month(), l:date)
+  let l:log_content = []
+  for day in range(0, (7 % l:dow) + g:bujo_week_start)
+    echom "l:date (" . l:date . ") + day (" . day . ") = " . (l:date + day)
+    let l:day_header = s:format_header_custom_date(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), l:date + day)
+    let l:content = [l:day_header, ""]
+    for key in g:bujo_header_entries_ordered
+      if s:bujo_header_entries[key]["daily_enabled"]
+        call add(l:content, s:bujo_header_entries[key]["header"])
+        if g:bujo_daily_include_event_header == 2
+        " TODO - implement smart event inclusion in daily log
+        " Will likely come after calendar integration, need a way of finding all live events
+          echoerr "Smart event creation Not implemented!"
+          return
+        endif
+        call add(l:content, "")
       endif
-      call add(l:content, "")
-    endif
+    endfor
+    call extend(l:log_content, l:content)
   endfor
 
-  " Does the containing file have other daily log entries?
-  if readfile(l:daily_log, "", 1)[0] !=# l:formatted_daily_header
-    " Add any pre-existing content to the file
-    call extend(l:content, readfile(l:daily_log))
-  endif
-
   " Write output to file
-  call writefile(l:content, l:daily_log)
+  call writefile(l:log_content, l:daily_log)
 endfunction
 
 function! s:init_future(year) abort
@@ -529,6 +533,11 @@ function! s:format_list_collections(collections) abort
     return l:content
 endfunction
 
+function! s:formatted_daily_header(day, date) abort
+  return s:format_date_str(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), a:date, a:day)
+  let l:formatted_daily_header = s:format_header(s:bujo_daily_header, a:journal) 
+endfunction
+
 function! s:is_collection(journal, collection)  abort
 	try
 		let l:collections = readdir(s:format_path(expand(g:bujo_path), s:format_filename(a:journal)), {f -> f !~ '\(' . s:BUJO_DAILY . '\|' . s:BUJO_MONTHLY . '\|' . s:BUJO_FUTURE . '\|' . s:BUJO_BACKLOG. '\)'})
@@ -618,15 +627,15 @@ function! s:process_cron(expr, year, month, day, dow) abort
 endfunction
 
 function! s:get_current_year() abort
-  return str2nr(strftime("%y"))
+  return strftime("%Y")
 endfunction
 
 function! s:get_current_month() abort
-  return str2nr(strftime("%m"))
+  return strftime("%m")
 endfunction
 
 function! s:get_current_day() abort
-  return str2nr(strftime("%d"))
+  return strftime("%d")
 endfunction
 
 function! s:is_leap_year(year) abort
@@ -681,7 +690,7 @@ function! s:format_date_str(in, year, month, day = v:null, week_of_month=  v:nul
             \ substitute(a:in, "%d", a:day, "g"),
             \ "%w", a:week_of_month, "g"),
           \ "%m", a:month, "g"),
-        \ "%y", a:year, "g")
+        \ "%Y", a:year, "g")
 endfunction
 
 
@@ -791,7 +800,7 @@ endfunction
 "     `tbd` move to custom collection?
 function! bujo#OpenDaily(...) abort
   let l:journal = a:0 == 0 ? s:current_journal : join(a:000, " ")
-  let l:daily_log = s:format_path(g:bujo_path, s:format_filename(l:journal), s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day())
+  let l:daily_log = s:format_path(g:bujo_path, s:format_filename(l:journal), s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day()))
   call s:init_daily(l:journal)
   " We're initialising this weeks daily log, do we have auto reflection
   " enabled?
@@ -970,12 +979,12 @@ function! bujo#Collection(bang, ...) abort
     for line in l:content[2:-1]
       let l:counter += 1
       let l:collection_header = ". [" . l:collection_print_name . "](" . l:collection_index_link . ")"
-      if line !~# substitute(g:bujo_index_list_char, "{#}", l:counter . ". ", "g") 
-        call insert(l:content, substitute(g:bujo_index_list_char, "{#}", l:counter, "g") . l:collection_header, l:counter + 2)
+      if line !~# l:counter . ". "
+        call insert(l:content, l:counter . l:collection_header, l:counter + 2)
         break
       " Account for the case where we are at EOF and no empty newline
       elseif line ==# l:content[0] || len(l:content) == l:counter + 2
-        call add(l:content, substitute(g:bujo_index_list_char, "{#}", l:counter + 1, "g") . l:collection_header)
+        call add(l:content, l:counter + 1 . l:collection_header)
       endif
     endfor
     call writefile(l:content, l:journal_index)
