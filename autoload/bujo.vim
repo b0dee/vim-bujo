@@ -373,7 +373,7 @@ function! s:init_daily(journal) abort
   let l:daily_log = l:journal_dir . "/". s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day())
   let l:log_exists = filereadable(l:daily_log)
 
-  if l:log_exists && matchstrlist(readfile(l:daily_log), l:formatted_daily_header) == 1 | return | endif
+  if l:log_exists && len(matchstrlist(readfile(l:daily_log), l:formatted_daily_header)) == 1 | return | endif
 
   if s:mkdir_if_needed(a:journal) | return | endif
 
