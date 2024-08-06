@@ -373,10 +373,7 @@ function! s:init_daily(journal) abort
   let l:daily_log = l:journal_dir . "/". s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day())
   let l:log_exists = filereadable(l:daily_log)
 
-  if l:log_exists && len(matchstrlist(readfile(l:daily_log), l:formatted_daily_header)) == 1
-    return
-  endif
-
+  if l:log_exists && matchstrlist(readfile(l:daily_log), l:formatted_daily_header) == 1 | return | endif
 
   if s:mkdir_if_needed(a:journal) | return | endif
 
@@ -385,7 +382,7 @@ function! s:init_daily(journal) abort
   let l:log_content = []
   for day in range(0, (7 % l:dow) + g:bujo_week_start)
     echom "l:date (" . l:date . ") + day (" . day . ") = " . (l:date + day)
-    let l:day_header = s:format_header_custom_date(l:formatted_daily_header, s:get_current_year(), s:get_current_month(), l:date + day)
+    let l:day_header = s:format_header_custom_date(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), l:date + day)
     let l:content = [l:day_header, ""]
     for key in g:bujo_header_entries_ordered
       if s:bujo_header_entries[key]["daily_enabled"]
@@ -399,8 +396,7 @@ function! s:init_daily(journal) abort
         call add(l:content, "")
       endif
     endfor
-    echom l:content
-    call extend(l:log_content, l:content, 0)
+    call extend(l:log_content, l:content)
   endfor
 
   " Write output to file
