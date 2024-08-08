@@ -1021,9 +1021,9 @@ function! s:init_monthly(month) abort
   endif
   let l:future_content = readfile(l:future_log)
   let l:content = [ s:format_header_custom_date(g:bujo_monthly_header, s:get_current_year(), a:month, 1), "" ]
-  let l:month_start = matchstrlist(l:future_content, s:format_header_custom_date(s:bujo_future_month_header, s:get_current_year(), a:month, 1))
-  let l:month_end = matchstrlist(l:future_content, s:format_header_custom_date(s:bujo_future_month_header, s:get_current_year(), a:month + 1, 1))
-  call extend(l:content, l:future_content[l:month_start[0]["idx"] + 2 : l:month_end[0]["idx"] - 1])
+  let l:month_start = matchstrlist(l:future_content, s:format_header_custom_date(s:bujo_future_month_header, s:get_current_year(), a:month, 1))[0]["idx"] + 2 
+  let l:month_end = a:month + 2 == 12 ? -1 : matchstrlist(l:future_content, s:format_header_custom_date(s:bujo_future_month_header, s:get_current_year(), a:month + 1, 1))[0]["idx"] - 1
+  call extend(l:content, l:future_content[l:month_start: l:month_end])
 
   if g:bujo_monthly_table_enabled 
     let l:day_header = "Day "
