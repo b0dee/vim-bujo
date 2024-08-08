@@ -800,7 +800,7 @@ function! bujo#OpenDaily(...) abort
 
   call s:open_or_switch_window(l:daily_log)
   let l:content = readfile(l:daily_log)
-  let l:row = matchstrlist(l:content, s:format_header_custom_date(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), s:get_current_day()))
+  let l:row = matchstrlist(l:content, s:format_header_custom_date(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), str2nr(s:get_current_day())))
   " Set the month to be the top of the file
   " + 1 as index starts at 0 + configured scrolloff distance to put the header
   " at the top of the buffer
