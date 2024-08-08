@@ -1013,13 +1013,18 @@ function! s:init_monthly(month) abort
   if filereadable(l:monthly_log)
     return
   endif
+  let l:future_log = s:format_path(g:bujo_path,s:current_journal,s:format_header_custom_date(s:bujo_future_filename,s:get_current_year(), 1, 1))
+  " We rely on pulling info from future log to create the monthly
+  " event/tasks/notes lists (to prepopulate)
+  if !filereadable(l:future_log)
+    call s:init_future()
+  endif
+  let l:future_content = readfile(l:future_log)
   let l:content = [ s:format_header_custom_date(g:bujo_monthly_header, s:get_current_year(), a:month, 1), "" ]
-  for header in g:bujo_header_entries_ordered
-    if s:bujo_header_entries[header]["monthly_enabled"]
-      call add(l:content, s:format_header(s:bujo_header_entries[header]["header"]))
-      call add(l:content, "")
-    endif
-  endfor
+  let l:month_start = matchstrlist(l:future_content, s:format_header_custom_date(s:bujo_future_month_header, s:get_current_year(), a:month, 1))
+  let l:month_end = matchstrlist(l:future_content, s:format_header_custom_date(s:bujo_future_month_header, s:get_current_year(), a:month + 1, 1))
+  call extend(l:content, l:future_content[l:month_start[0]["idx"] + 2 : l:month_end[0]["idx"] - 1])
+
   if g:bujo_monthly_table_enabled 
     let l:day_header = "Day "
     let l:empty_checkbox = "[ ]"
