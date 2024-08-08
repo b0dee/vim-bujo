@@ -361,11 +361,11 @@ endfunction
 "        - Option to disable weekends
 "        Prepopulate tasks/events from future and monthly log
 function! s:init_daily(journal) abort
-  let l:formatted_daily_header = s:format_header(s:bujo_daily_header, a:journal) 
-  let l:journal_dir = expand(g:bujo_path) . s:format_filename(a:journal) 
-  if filereadable(l:daily_log) | return | endif
+  let l:formatted_daily_header = s:format_header(s:bujo_daily_header, a:journal)
+  let l:daily_log = s:format_path(g:bujo_path, a:journal, s:format_header_custom_date(s:bujo_daily_filename, s:get_current_year(), s:get_current_month(), s:get_current_day())) 
 
   if s:mkdir_if_needed(a:journal) | return | endif
+  if filereadable(l:daily_log) | return | endif
 
   let l:date = s:get_current_day()
   let l:dow = s:get_day_of_week(s:get_current_year(), s:get_current_month(), l:date)
@@ -800,7 +800,7 @@ function! bujo#OpenDaily(...) abort
 
   call s:open_or_switch_window(l:daily_log)
   let l:content = readfile(l:daily_log)
-  let l:row = matchstrlist(l:content, s:format_header_custom_date(s:bujo_daily_header, l:year, s:get_current_month(), 1))
+  let l:row = matchstrlist(l:content, s:format_header_custom_date(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), s:get_current_day()))
   " Set the month to be the top of the file
   " + 1 as index starts at 0 + configured scrolloff distance to put the header
   " at the top of the buffer
