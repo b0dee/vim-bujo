@@ -98,12 +98,7 @@ let s:bujo_future_filename = s:BUJO_FUTURE . "_%Y.md"
 if !exists('g:bujo_future_header')
 	let g:bujo_future_header =  "# {journal} Future Log - %Y" 
 endif
-" Available replacements: 
-" - Long month name: %B
-" - Short month name: %b
-if !exists('g:bujo_future_month_header')
-	let g:bujo_future_month_header =  "# %B" 
-endif
+let s:bujo_future_month_header =  "# %B" 
 
 " Monthly Log vars
 let s:bujo_monthly_filename = s:BUJO_MONTHLY . "_%Y_%m.md"
@@ -280,9 +275,7 @@ function! s:format_header(header, journal = s:format_initial_case(s:current_jour
 endfunction
 
 function! s:format_header_custom_date(format, year, month, day) abort
-  echom "Provided: Year: " . a:year . " Month: " . a:month . " Day: " . a:day
   let l:dow = s:get_day_of_week(a:year,a:month,a:day)
-  echom "Produces Day of Week: " . l:dow
   return substitute(
           \ substitute(
             \ substitute(
@@ -370,10 +363,7 @@ endfunction
 function! s:init_daily(journal) abort
   let l:formatted_daily_header = s:format_header(s:bujo_daily_header, a:journal) 
   let l:journal_dir = expand(g:bujo_path) . s:format_filename(a:journal) 
-  let l:daily_log = l:journal_dir . "/". s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day())
-  let l:log_exists = filereadable(l:daily_log)
-
-  if l:log_exists && len(matchstrlist(readfile(l:daily_log), l:formatted_daily_header)) == 1 | return | endif
+  if filereadable(l:daily_log) | return | endif
 
   if s:mkdir_if_needed(a:journal) | return | endif
 
@@ -381,8 +371,7 @@ function! s:init_daily(journal) abort
   let l:dow = s:get_day_of_week(s:get_current_year(), s:get_current_month(), l:date)
   let l:log_content = []
   for day in range(0, (7 % l:dow) + g:bujo_week_start)
-    echom "l:date (" . l:date . ") + day (" . day . ") = " . (l:date + day)
-    let l:day_header = s:format_header_custom_date(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), l:date + day)
+    let l:day_header = s:format_header_custom_date(l:formatted_daily_header, s:get_current_year(), s:get_current_month(), l:date + day)
     let l:content = [l:day_header, ""]
     for key in g:bujo_header_entries_ordered
       if s:bujo_header_entries[key]["daily_enabled"]
@@ -396,7 +385,7 @@ function! s:init_daily(journal) abort
         call add(l:content, "")
       endif
     endfor
-    call extend(l:log_content, l:content)
+    call extend(l:log_content, l:content, 0)
   endfor
 
   " Write output to file
@@ -420,7 +409,7 @@ function! s:init_future(year) abort
   endif 
   for month in l:months
     " TODO - This **will** break between systems. Will need to add a conditional to decide what to go with when we encounter it
-    call add(l:content, substitute(substitute(g:bujo_future_month_header, "%B", month["long"], "g"), "%b", month["short"], "g"))
+    call add(l:content, substitute(substitute(s:bujo_future_month_header, "%B", month["long"], "g"), "%b", month["short"], "g"))
     call add(l:content, "")
     for key in g:bujo_header_entries_ordered
       if s:bujo_header_entries[key]["future_enabled"]
@@ -598,7 +587,7 @@ function! s:process_cron_interval(interval) abort
       endif
     endif
   endfor
-
+  return l:arr
 endfunction
 
 function! s:process_cron(expr, year, month, day, dow) abort
@@ -810,6 +799,13 @@ function! bujo#OpenDaily(...) abort
   endif
 
   call s:open_or_switch_window(l:daily_log)
+  let l:content = readfile(l:daily_log)
+  let l:row = matchstrlist(l:content, s:format_header_custom_date(s:bujo_daily_header, l:year, s:get_current_month(), 1))
+  " Set the month to be the top of the file
+  " + 1 as index starts at 0 + configured scrolloff distance to put the header
+  " at the top of the buffer
+  call cursor(l:row[0]["idx"] + 1 + &scrolloff, 0) 
+  execute "normal z\<ENTER>"
  
 endfunction
 " TODO - Handle displaying urgent tasks
@@ -835,40 +831,26 @@ function! bujo#CreateEntry(type, is_urgent, ...) abort
 endfunction
 
 function! bujo#OpenFuture(...) abort
-  " FIXME - Scroll to month is broken
-  let l:journal_dir = s:format_path(g:bujo_path, s:current_journal)
-  let l:future_log = l:journal_dir . "/" . s:format_filename(s:bujo_future_filename) 
-  if s:mkdir_if_needed(s:current_journal) | return | endif
+  let l:future_log = s:format_path(g:bujo_path, s:current_journal, s:format_filename(s:bujo_future_filename)) 
 
   if a:0 == 0
     let l:year = s:get_current_year()
   else
     let l:year = a:1 
-    let l:future_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_FUTURE . "_" . l:year . ".md")
   endif
-  if a:0 == 2
-    let l:month = a:2
-  else 
-    if l:year == s:get_current_year()
-      let l:month = s:get_current_month()
-    else
-      let l:month = "Jan"
-    endif
-  endif
+  let l:future_log = s:format_path(g:bujo_path, s:current_journal, s:format_header_custom_date(s:bujo_future_filename, l:year, 1, 1))
+
+  if s:mkdir_if_needed(s:current_journal) | return | endif
   
   call s:init_future(l:year)
 
   call s:open_or_switch_window(l:future_log)
   let l:content = readfile(l:future_log)
-  let l:month_index = 0
-  for line in l:content
-    let l:month_index += 1
-    if line =~? l:month
-      break
-    endif
-  endfor
+  let l:row = matchstrlist(l:content, s:format_header_custom_date(s:bujo_future_month_header, l:year, s:get_current_month(), 1))
   " Set the month to be the top of the file
-  call cursor(l:month_index, 0) 
+  " + 1 as index starts at 0 + configured scrolloff distance to put the header
+  " at the top of the buffer
+  call cursor(l:row[0]["idx"] + 1 + &scrolloff, 0) 
   execute "normal z\<ENTER>"
 endfunction
 
@@ -907,7 +889,7 @@ function! bujo#FutureEntry(type, providing_year, ...) abort
   let l:future_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_FUTURE . "_" . l:year . ".md")
   let l:content = readfile(l:future_log)
 
-  let l:search_for = substitute(substitute(g:bujo_future_month_header, "%B", l:month, "g"), "%b", l:month, "g")
+  let l:search_for = substitute(substitute(s:bujo_future_month_header, "%B", l:month, "g"), "%b", l:month, "g")
   " Find the month provided 
   let l:index = 0
   for line in l:content
@@ -1031,7 +1013,7 @@ function! s:init_monthly(month) abort
   if filereadable(l:monthly_log)
     return
   endif
-  let l:content = [ s:format_header_custom_date(g:bujo_monthly_header, s:get_current_year(), a:month), "" ]
+  let l:content = [ s:format_header_custom_date(g:bujo_monthly_header, s:get_current_year(), a:month, 1), "" ]
   for header in g:bujo_header_entries_ordered
     if s:bujo_header_entries[header]["monthly_enabled"]
       call add(l:content, s:format_header(s:bujo_header_entries[header]["header"]))
