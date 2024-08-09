@@ -1018,7 +1018,7 @@ function! bujo#OpenBacklog(...) abort
   " Check if we need to create an entry
   " We do this before opening the split as we may want to do both
   if a:0 == 0
-    s:open_or_switch_window(l:backlog)
+    call s:open_or_switch_window(l:backlog)
   else
     let l:entry = substitute(join(a:000, " "), "\\(^[a-z]\\)", "\\U\\1", "g")
     let l:content = readfile(l:backlog)
