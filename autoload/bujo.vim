@@ -352,7 +352,7 @@ function! s:init_journal_index(journal) abort
   let l:counter = 0
   for key in s:bujo_index_entries
     let l:counter += 1
-    call add(l:content, l:counter . ".", "g") . " [" . key["name"] . "](" . key["file"] . ")")
+    call add(l:content, l:counter . "." . " [" . key["name"] . "](" . key["file"] . ")")
   endfor
   call writefile(l:content, l:journal_index)
 endfunction
