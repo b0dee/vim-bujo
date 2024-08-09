@@ -224,7 +224,7 @@ let s:bujo_months = [
 " etc
 
 if !exists('g:bujo_vader_testing')
-  let g:bujo_vader_testing = v:true
+  let g:bujo_vader_testing = v:false
 endif
 if !exists('g:bujo_vader_mkdir_choice')
   let g:bujo_vader_mkdir_choice = 1
