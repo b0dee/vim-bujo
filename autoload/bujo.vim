@@ -277,20 +277,22 @@ endfunction
 function! s:format_header_custom_date(format, year, month, day) abort
   let l:dow = s:get_day_of_week(a:year,a:month,a:day)
   return substitute(
-          \ substitute(
-            \ substitute(
-              \ substitute(
-                \ substitute(
-                  \ substitute(
-                    \ substitute(
-                      \ substitute(a:format, "{journal}", s:format_initial_case(s:current_journal), "g"), 
-                      \ "%Y", a:year, "g"),
-                    \ "%m", a:month, "g"),
-                  \ "%d", a:day, "g"),
-                \ "%B", s:bujo_months[a:month - 1]["long"], "g"),
-              \ "%b", s:bujo_months[a:month - 1]["short"], "g"),
-            \ "%A", s:bujo_days[l:dow]["long"], "g"),
-          \ "%a", s:bujo_days[l:dow]["short"], "g")
+         \ substitute(
+           \ substitute(
+             \ substitute(
+               \ substitute(
+                 \ substitute(
+                   \ substitute(
+                     \ substitute(
+                       \ substitute(a:format, "{journal}", s:format_initial_case(s:current_journal), "g"), 
+                       \ "%Y", a:year, "g"),
+                     \ "%m", a:month, "g"),
+                   \ "%d", a:day, "g"),
+                 \ "%B", s:bujo_months[a:month - 1]["long"], "g"),
+               \ "%b", s:bujo_months[a:month - 1]["short"], "g"),
+             \ "%A", s:bujo_days[l:dow]["long"], "g"),
+           \ "%a", s:bujo_days[l:dow]["short"], "g"),
+         \ "%w", s:get_week_of_month(a:year,a:month,a:day), "g")
 endfunction
 
 function! s:format_path(...) abort
