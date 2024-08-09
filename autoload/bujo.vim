@@ -332,9 +332,7 @@ endfunction
 " TODO - See if we can remove the bool return from here and rely on abort...
 function! s:mkdir_if_needed(journal) abort
   let l:journal_dir = s:format_path(g:bujo_path, s:format_filename(a:journal))
-  if isdirectory(l:journal_dir)
-    return v:false
-	endif
+  if isdirectory(l:journal_dir) | return v:false | endif
 
   let l:journal_print_name = s:format_initial_case(a:journal)
   let choice = g:bujo_vader_testing ? g:bujo_vader_mkdir_choice : confirm("Creating new journal `" . l:journal_print_name . "`. Continue Y/n (default: yes)?","&Yes\n&No")
