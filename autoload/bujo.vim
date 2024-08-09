@@ -706,6 +706,7 @@ endfunction
 
 " Get and set current journal (offer to create if it doesn't exist)
 function! bujo#Journal(print_current, ...) abort
+  let l:journal_name = s:format_title_case(join(a:000, " "))
 	let l:journals = s:list_journals()
 	if len(l:journals) == 0 
 		call s:init_journal_index(s:current_journal)
@@ -722,13 +723,16 @@ function! bujo#Journal(print_current, ...) abort
 	" Check if journal can be found
 	" Support regex but needs to only find 1 match
 	" Doesn't change s:current_journal on failure
-  let l:matched_journals = matchstrlist(l:journals, s:format_filename(join(a:000, " ")))
-  if len(l:matched_journals) == 1
+  let l:matched_journals = matchstrlist(l:journals, l:journal_name)
+  if len(l:matched_journals) == 0 
+    if s:mkdir_if_needed(l:journal_name) | return | endif
+    return s:set_current_journal(l:journal_name)
+  elseif len(l:matched_journals) == 1
     return s:set_current_journal(l:matched_journals[0]["text"])
   elseif len(l:matched_journals) > 1
     let l:matches = []
     for match in l:matched_journals
-      call add(l:matches, match["text"])
+      call add(l:matches, l:journals[match["idx"]])
     endfor
     return s:interactive_journal_select(l:matches)
   endif
