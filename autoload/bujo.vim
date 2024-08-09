@@ -842,8 +842,7 @@ function! bujo#CreateEntry(type, is_urgent, ...) abort
 	let l:entry = l:entry
 
   let l:journal = s:current_journal
-  let l:journal_dir = s:format_path(expand(g:bujo_path), l:journal)
-  let l:daily_log = s:format_path(l:journal_dir, s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day()))
+  let l:daily_log = s:format_path(g:bujo_path, l:journal, s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day()))
 
   call s:init_daily(l:journal)
   let l:content = readfile(l:daily_log)
