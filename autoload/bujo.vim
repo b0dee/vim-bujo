@@ -888,7 +888,7 @@ function! bujo#FutureEntry(type, providing_year, ...) abort
     let l:month = l:month[0:2]
   endtry
   
-  call s:init_future(year)
+  call s:init_future(a:year)
 
   " Open that year's future log
   let l:future_log = s:format_path(g:bujo_path, s:current_journal, s:BUJO_FUTURE . "_" . l:year . ".md")
@@ -1022,7 +1022,7 @@ function! s:init_monthly(month) abort
   " We rely on pulling info from future log to create the monthly
   " event/tasks/notes lists (to prepopulate)
   if !filereadable(l:future_log)
-    call s:init_future()
+    call s:init_future(s:get_current_year())
   endif
   let l:future_content = readfile(l:future_log)
   let l:content = [ s:format_header_custom_date(g:bujo_monthly_header, s:get_current_year(), a:month, 1), "" ]
