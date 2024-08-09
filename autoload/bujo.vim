@@ -297,13 +297,18 @@ function! s:format_path(...) abort
 	if a:0 == 0 
 		echoerr "format_path requires at least 2 arguments"
 	endif
-	let l:path = ""
-	for step in a:000
-		if step[-1:-1] == "/" || step[-1:-1] == "\\" 
-			let l:path .= expand(step[0:-2])
-		else
-			let l:path .= "/" . (step) 
-		endif
+	let l:path = a:000[0]
+	for step in a:000[1:-1]
+    let l:item = step
+    " Trim any leading slashes
+    if l:item[0:0] == "/" || l:item[0:0] == "\\"
+      let l:item = l:item[1:-1]
+    endif
+    if l:path[-1:-1] == "/" || l:path[-1:-1] == "\\"
+      let l:path .= l:item
+    else 
+      let l:path .= "/" . l:item
+    endif
 	endfor
 	return l:path
 endfunction
