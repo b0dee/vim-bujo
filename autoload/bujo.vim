@@ -856,7 +856,7 @@ function! bujo#OpenFuture(...) abort
 
   call s:open_or_switch_window(l:future_log)
   let l:content = readfile(l:future_log)
-  let l:row = matchstrlist(l:content, s:format_header_custom_date(s:bujo_future_month_header, l:year, s:get_current_month(), 1))
+  let l:row = matchstrlist(l:content, s:format_header_custom_date(s:bujo_future_month_header, l:year, s:get_current_month() + 1, 1))
   " Set the month to be the top of the file
   " + 1 as index starts at 0 + configured scrolloff distance to put the header
   " at the top of the buffer
