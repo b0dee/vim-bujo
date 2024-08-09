@@ -854,7 +854,7 @@ function! bujo#OpenFuture(...) abort
 
   call s:open_or_switch_window(l:future_log)
   let l:content = readfile(l:future_log)
-  let l:row = matchstrlist(l:content, s:format_header_custom_date(s:bujo_future_month_header, l:year, s:get_current_month() + 1, 1))
+  let l:row = matchstrlist(l:content, s:format_header_custom_date(s:bujo_future_month_header, l:year, s:get_current_month(), 1))
   " Set the month to be the top of the file
   " + 1 as index starts at 0 + configured scrolloff distance to put the header
   " at the top of the buffer
@@ -1030,7 +1030,7 @@ function! s:init_monthly(month) abort
   let l:future_content = readfile(l:future_log)
   let l:content = [ s:format_header_custom_date(g:bujo_monthly_header, s:get_current_year(), a:month, 1), "" ]
   let l:month_start = matchstrlist(l:future_content, s:format_header_custom_date(s:bujo_future_month_header, s:get_current_year(), a:month, 1))
-  let l:month_end = matchstrlist(l:future_content, s:format_header_custom_date(s:bujo_future_month_header, s:get_current_year(), a:month + 1, 1))
+  let l:month_end = matchstrlist(l:future_content, s:format_header_custom_date(s:bujo_future_month_header, s:get_current_year(), a:month, 1))
   call extend(l:content, l:future_content[l:month_start[0]["idx"] + 2 : l:month_end[0]["idx"] - 1])
 
   if g:bujo_monthly_table_enabled 
