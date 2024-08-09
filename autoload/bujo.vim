@@ -310,7 +310,7 @@ function! s:format_path(...) abort
       let l:path .= "/" . l:item
     endif
 	endfor
-	return l:path
+	return expand(l:path)
 endfunction
 
 function! s:format_from_path(journal, collection = "index.md") abort
