@@ -179,7 +179,7 @@ if exists("g:bujo_index_entries")
 endif
 
 if !exists('g:bujo_week_start') || g:bujo_week_start < 0 || g:bujo_week_start > 7
-  let g:bujo_week_start = 4 
+  let g:bujo_week_start = 1 
 endif
 
 let s:date_suffixes = {
