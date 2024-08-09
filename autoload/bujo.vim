@@ -562,7 +562,8 @@ function! s:interactive_journal_select(journal_list) abort
       call add(l:choices, "&Quit") 
 
 			let l:result = confirm("Select Journal", join(l:choices, "\n")) 
-      if l:result == 0 
+      if l:result == 0 || l:result == len(l:choices)
+        echon "User cancelled journal selection. Journal unchanged."
         return
       endif
       return s:set_current_journal(s:get_formatted_journal(a:journal_list[l:result - 1]))
