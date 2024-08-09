@@ -810,13 +810,14 @@ endfunction
 function! bujo#OpenDaily(...) abort
   let l:journal = a:0 == 0 ? s:current_journal : join(a:000, " ")
   let l:daily_log = s:format_path(g:bujo_path, s:format_filename(l:journal), s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day()))
-  call s:init_daily(l:journal)
   " We're initialising this weeks daily log, do we have auto reflection
   " enabled?
   let l:log_exists = filereadable(l:daily_log)
-  if !l:log_exists && g:bujo_auto_reflection
-    return bujo#OpenMigration()
-  endif
+  " if !l:log_exists && g:bujo_auto_reflection
+  "   return bujo#OpenMigration()
+  " endif
+
+  call s:init_daily(l:journal)
 
   call s:open_or_switch_window(l:daily_log)
   let l:content = readfile(l:daily_log)
