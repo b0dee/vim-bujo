@@ -387,7 +387,8 @@ function! s:init_daily(journal) abort
   let l:date = s:get_current_day()
   let l:dow = s:get_day_of_week(s:get_current_year(), s:get_current_month(), l:date)
   let l:log_content = []
-  for day in range(0, (7 % l:dow) + (g:bujo_week_start - 1))
+  let l:days_to_add = l:dow == g:bujo_week_start ? 6 : (7 % l:dow) + (g:bujo_week_start - 1)
+  for day in range(0, l:days_to_add)
     " TODO - Get date suffix appended to the date header
     let l:day_header = s:format_header_custom_date(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), l:date + day)
     let l:content = [l:day_header, ""]
