@@ -42,5 +42,6 @@ command! -nargs=* Future      call bujo#Future(<f-args>)
 command! -nargs=* Monthly     call bujo#Monthly(<f-args>)
 command! -nargs=* Backlog      call bujo#Backlog(<f-args>)
 
+command! -nargs=* -bang Outstanding   call bujo#Outstanding()
 command! -nargs=* -bang TaskList   call bujo#ListTasks(<bang>0)
 command! -nargs=* -bang ListTasks   call bujo#ListTasks(<bang>0)

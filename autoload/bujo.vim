@@ -402,6 +402,8 @@ function! s:init_daily(journal) abort
   endfor
   " Write output to file
   call writefile(l:content, l:daily_log)
+  call bujo#Outstanding()
+  execute "wincmd w"
 endfunction
 
 function! s:init_future(year) abort
@@ -765,10 +767,6 @@ function! bujo#Index(list_journals, ...) abort
   endif
 endfunction
 
-function! bujo#Migration(...) abort
-  
-endfunction
-
 " TODO - Support migration
 " On initialising each week, get the last daily journal file (need to
 " support going on holiday for 2 weeks and coming back, should show last
@@ -787,6 +785,49 @@ endfunction
 "     `<<` ability to specify year (will be needed when close to year end
 "          i.e. December) and need to put things in for new year
 "     `tbd` move to custom collection?
+
+function! s:outstanding_sort(a, b) abort
+  let l:a_date = split(match(a:a, '[0-9]\{4}-[0-9]{1,2}-[0-9]{1,2}'), "-")
+  let l:b_date = split(match(a:b, '[0-9]\{4}-[0-9]{1,2}-[0-9]{1,2}'), "-")
+  let l:year = 0
+  let l:month = 1
+  let l:day = 2
+  if l:a_date[l:year] > l:b_date[l:year] && l:a_date[l:month] > l:b_date[l:month] && l:a_date[l:day] > l:b_date[l:day] 
+    return -1
+  endif
+  return 1
+endfunction
+
+function! bujo#Outstanding() abort
+  let l:files = sort(readdir(s:format_path(g:bujo_path, s:current_journal), {f -> f =~ "daily.*[.]md$"}), "s:outstanding_sort")
+  call extend(l:files, readdir(s:format_path(g:bujo_path, s:current_journal), {f -> f =~ "[.]md$" && f !~ "backlog" && f !~ "daily.*[.]md$"}))
+  let l:outstanding_buffer = []
+  for file in l:files
+    let l:file_content = readfile(s:format_path(g:bujo_path, s:current_journal, file))
+    let l:open_tasks = matchstrlist(l:file_content, '- \[ \] ..*')
+    if len(l:open_tasks) == 0 | continue | endif
+
+    let l:formatted_file_name = s:format_from_path(s:current_journal, file)
+
+    let l:content = []
+    call add(l:content, "**" . l:formatted_file_name . ":**")
+    for entry in l:open_tasks
+      call add(l:content, entry["text"])
+    endfor
+    call add(l:content, "")
+    if len(l:content) > 2
+      call extend(l:outstanding_buffer, l:content)
+    endif
+  endfor
+  " Don't bother opening anything if we haven't foud any open tasks
+  if len(l:outstanding_buffer) == 0 | return | endif
+
+  execute "belowright split " . fnameescape(s:format_path("bujo://", s:current_journal, "tasklist.md"))
+  setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
+  call append(0, l:outstanding_buffer)
+  call cursor(1, 0) 
+endfunction
+
 function! bujo#Today(...) abort
   let l:journal = a:0 == 0 ? s:current_journal : join(a:000, " ")
   let l:daily_log = s:format_path(g:bujo_path, s:format_filename(l:journal), s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day()))
