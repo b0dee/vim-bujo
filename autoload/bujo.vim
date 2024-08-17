@@ -33,7 +33,7 @@ if !exists('g:bujo_daily_skip_weekend')
 endif
 
 " Daily Log vars
-let s:bujo_daily_filename = s:BUJO_DAILY . "_%Y-%m-%w.md"
+let s:bujo_daily_filename = s:BUJO_DAILY . "_%Y-%m-%d.md"
 if !exists('g:bujo_winsize')
 	let g:bujo_winsize = 50
 endif
@@ -369,15 +369,17 @@ function! s:init_daily(journal) abort
 
   if s:mkdir_if_needed(a:journal) | return | endif
   if filereadable(l:daily_log) | return | endif
+
   let l:monthly_log = s:format_path(g:bujo_path, s:current_journal, s:format_header_custom_date(s:bujo_monthly_filename, s:get_current_year(), s:get_current_month(), 1))
   if !filereadable(l:monthly_log) | call s:init_monthly(s:get_current_month()) | endif
   let l:monthly_content = readfile(l:monthly_log)
   let l:boundaries = {}
   for i in range(len(g:bujo_header_entries_ordered))
     let l:key = g:bujo_header_entries_ordered[i]
-    let l:boundaries[l:key] = {}
-    let l:boundaries[l:key]["start"] =  matchstrlist(l:monthly_content, escape(s:bujo_header_entries[l:key]["header"], "*"))[0]["idx"] + 1
-    let l:boundaries[l:key]["end"] = -1
+    let l:boundaries[l:key] = {
+          \ "start" : matchstrlist(l:monthly_content, escape(s:bujo_header_entries[l:key]["header"], "*"))[0]["idx"] + 1,
+          \ "end" : -1
+    \ }
     if i > 0 
       let l:prevkey = g:bujo_header_entries_ordered[i-1]
       let l:boundaries[l:prevkey]["end"] =  matchstrlist(l:monthly_content, escape(s:bujo_header_entries[l:key]["header"], "*"))[0]["idx"]
@@ -386,26 +388,20 @@ function! s:init_daily(journal) abort
 
   let l:date = s:get_current_day()
   let l:dow = s:get_day_of_week(s:get_current_year(), s:get_current_month(), l:date)
-  let l:log_content = []
-  let l:days_to_add = l:dow == g:bujo_week_start ? 6 : (7 % l:dow) + (g:bujo_week_start - 1)
-  for day in range(0, l:days_to_add)
-    " TODO - Get date suffix appended to the date header
-    let l:day_header = s:format_header_custom_date(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), l:date + day)
-    let l:content = [l:day_header, ""]
-    for key in g:bujo_header_entries_ordered
-      let l:entry_block = l:monthly_content[l:boundaries[key]["start"] : l:boundaries[key]["end"]]
-      call add(l:content, s:bujo_header_entries[key]["header"])
-      let l:entries = matchstrlist(l:entry_block, s:format_date_with_suffix(l:date + day))
-      for entry in l:entries
-        let l:line = substitute(l:entry_block[entry["idx"]], s:format_date_with_suffix(l:date + day) . ": ", "", "")
-        call add(l:content, l:line)
-      endfor
-      call add(l:content, "")
+  let l:day_header = s:format_header_custom_date(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), l:date)
+  let l:content = [l:day_header, ""]
+  for key in g:bujo_header_entries_ordered
+    let l:entry_block = l:monthly_content[l:boundaries[key]["start"] : l:boundaries[key]["end"]]
+    call add(l:content, s:bujo_header_entries[key]["header"])
+    let l:entries = matchstrlist(l:entry_block, s:format_date_with_suffix(l:date))
+    for entry in l:entries
+      let l:line = substitute(l:entry_block[entry["idx"]], s:format_date_with_suffix(l:date) . ": ", "", "")
+      call add(l:content, l:line)
     endfor
-    call extend(l:log_content, l:content)
+    call add(l:content, "")
   endfor
   " Write output to file
-  call writefile(l:log_content, l:daily_log)
+  call writefile(l:content, l:daily_log)
 endfunction
 
 function! s:init_future(year) abort
