@@ -316,13 +316,7 @@ function! s:format_path(...) abort
 endfunction
 
 function! s:format_from_path(journal, collection = "index.md") abort
-  try 
-    return substitute(readfile(s:format_path(g:bujo_path, a:journal, a:collection), "", 1)[0][2:-1], "index", "", "g")
-  catch
-    " This shouldn't happen, but sometimes while in dev so just easier 
-    " If it does happen at least there's a fallback...
-    return s:format_initial_case(substitute(substitute(a:journal, "_", " ", "g"), ".md", "", ""))
-  endtry
+  return substitute(readfile(s:format_path(g:bujo_path, a:journal, a:collection), "", 1)[0][2:-1], "index", "", "g")
 endfunction
 
 function! s:list_journals() abort
