@@ -33,7 +33,7 @@ if !exists('g:bujo_daily_skip_weekend')
 endif
 
 " Daily Log vars
-let s:bujo_daily_filename = s:BUJO_DAILY . "_%Y-%m-%w.md"
+let s:bujo_daily_filename = s:BUJO_DAILY . "_%Y-%m-%d.md"
 if !exists('g:bujo_winsize')
 	let g:bujo_winsize = 50
 endif
@@ -316,13 +316,7 @@ function! s:format_path(...) abort
 endfunction
 
 function! s:format_from_path(journal, collection = "index.md") abort
-  try 
-    return substitute(readfile(s:format_path(g:bujo_path, a:journal, a:collection), "", 1)[0][2:-1], "index", "", "g")
-  catch
-    " This shouldn't happen, but sometimes while in dev so just easier 
-    " If it does happen at least there's a fallback...
-    return s:format_initial_case(substitute(substitute(a:journal, "_", " ", "g"), ".md", "", ""))
-  endtry
+  return substitute(readfile(s:format_path(g:bujo_path, a:journal, a:collection), "", 1)[0][2:-1], "index", "", "g")
 endfunction
 
 function! s:list_journals() abort
@@ -369,15 +363,17 @@ function! s:init_daily(journal) abort
 
   if s:mkdir_if_needed(a:journal) | return | endif
   if filereadable(l:daily_log) | return | endif
+
   let l:monthly_log = s:format_path(g:bujo_path, s:current_journal, s:format_header_custom_date(s:bujo_monthly_filename, s:get_current_year(), s:get_current_month(), 1))
   if !filereadable(l:monthly_log) | call s:init_monthly(s:get_current_month()) | endif
   let l:monthly_content = readfile(l:monthly_log)
   let l:boundaries = {}
   for i in range(len(g:bujo_header_entries_ordered))
     let l:key = g:bujo_header_entries_ordered[i]
-    let l:boundaries[l:key] = {}
-    let l:boundaries[l:key]["start"] =  matchstrlist(l:monthly_content, escape(s:bujo_header_entries[l:key]["header"], "*"))[0]["idx"] + 1
-    let l:boundaries[l:key]["end"] = -1
+    let l:boundaries[l:key] = {
+          \ "start" : matchstrlist(l:monthly_content, escape(s:bujo_header_entries[l:key]["header"], "*"))[0]["idx"] + 1,
+          \ "end" : -1
+    \ }
     if i > 0 
       let l:prevkey = g:bujo_header_entries_ordered[i-1]
       let l:boundaries[l:prevkey]["end"] =  matchstrlist(l:monthly_content, escape(s:bujo_header_entries[l:key]["header"], "*"))[0]["idx"]
@@ -386,26 +382,22 @@ function! s:init_daily(journal) abort
 
   let l:date = s:get_current_day()
   let l:dow = s:get_day_of_week(s:get_current_year(), s:get_current_month(), l:date)
-  let l:log_content = []
-  let l:days_to_add = l:dow == g:bujo_week_start ? 6 : (7 % l:dow) + (g:bujo_week_start - 1)
-  for day in range(0, l:days_to_add)
-    " TODO - Get date suffix appended to the date header
-    let l:day_header = s:format_header_custom_date(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), l:date + day)
-    let l:content = [l:day_header, ""]
-    for key in g:bujo_header_entries_ordered
-      let l:entry_block = l:monthly_content[l:boundaries[key]["start"] : l:boundaries[key]["end"]]
-      call add(l:content, s:bujo_header_entries[key]["header"])
-      let l:entries = matchstrlist(l:entry_block, s:format_date_with_suffix(l:date + day))
-      for entry in l:entries
-        let l:line = substitute(l:entry_block[entry["idx"]], s:format_date_with_suffix(l:date + day) . ": ", "", "")
-        call add(l:content, l:line)
-      endfor
-      call add(l:content, "")
+  let l:day_header = s:format_header_custom_date(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), l:date)
+  let l:content = [l:day_header, ""]
+  for key in g:bujo_header_entries_ordered
+    let l:entry_block = l:monthly_content[l:boundaries[key]["start"] : l:boundaries[key]["end"]]
+    call add(l:content, s:bujo_header_entries[key]["header"])
+    let l:entries = matchstrlist(l:entry_block, s:format_date_with_suffix(l:date))
+    for entry in l:entries
+      let l:line = substitute(l:entry_block[entry["idx"]], s:format_date_with_suffix(l:date) . ": ", "", "")
+      call add(l:content, l:line)
     endfor
-    call extend(l:log_content, l:content)
+    call add(l:content, "")
   endfor
   " Write output to file
-  call writefile(l:log_content, l:daily_log)
+  call writefile(l:content, l:daily_log)
+  call bujo#Outstanding()
+  execute "wincmd w"
 endfunction
 
 function! s:init_future(year) abort
@@ -769,10 +761,6 @@ function! bujo#Index(list_journals, ...) abort
   endif
 endfunction
 
-function! bujo#Migration(...) abort
-  
-endfunction
-
 " TODO - Support migration
 " On initialising each week, get the last daily journal file (need to
 " support going on holiday for 2 weeks and coming back, should show last
@@ -791,6 +779,49 @@ endfunction
 "     `<<` ability to specify year (will be needed when close to year end
 "          i.e. December) and need to put things in for new year
 "     `tbd` move to custom collection?
+
+function! s:outstanding_sort(a, b) abort
+  let l:a_date = split(match(a:a, '[0-9]\{4}-[0-9]{1,2}-[0-9]{1,2}'), "-")
+  let l:b_date = split(match(a:b, '[0-9]\{4}-[0-9]{1,2}-[0-9]{1,2}'), "-")
+  let l:year = 0
+  let l:month = 1
+  let l:day = 2
+  if l:a_date[l:year] > l:b_date[l:year] && l:a_date[l:month] > l:b_date[l:month] && l:a_date[l:day] > l:b_date[l:day] 
+    return -1
+  endif
+  return 1
+endfunction
+
+function! bujo#Outstanding() abort
+  let l:files = sort(readdir(s:format_path(g:bujo_path, s:current_journal), {f -> f =~ "daily.*[.]md$"}), "s:outstanding_sort")
+  call extend(l:files, readdir(s:format_path(g:bujo_path, s:current_journal), {f -> f =~ "[.]md$" && f !~ "backlog" && f !~ "daily.*[.]md$"}))
+  let l:outstanding_buffer = []
+  for file in l:files
+    let l:file_content = readfile(s:format_path(g:bujo_path, s:current_journal, file))
+    let l:open_tasks = matchstrlist(l:file_content, '- \[ \] ..*')
+    if len(l:open_tasks) == 0 | continue | endif
+
+    let l:formatted_file_name = s:format_from_path(s:current_journal, file)
+
+    let l:content = []
+    call add(l:content, "**" . l:formatted_file_name . ":**")
+    for entry in l:open_tasks
+      call add(l:content, entry["text"])
+    endfor
+    call add(l:content, "")
+    if len(l:content) > 2
+      call extend(l:outstanding_buffer, l:content)
+    endif
+  endfor
+  " Don't bother opening anything if we haven't foud any open tasks
+  if len(l:outstanding_buffer) == 0 | return | endif
+
+  execute "belowright split " . fnameescape(s:format_path("bujo://", s:current_journal, "tasklist.md"))
+  setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
+  call append(0, l:outstanding_buffer)
+  call cursor(1, 0) 
+endfunction
+
 function! bujo#Today(...) abort
   let l:journal = a:0 == 0 ? s:current_journal : join(a:000, " ")
   let l:daily_log = s:format_path(g:bujo_path, s:format_filename(l:journal), s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day()))
