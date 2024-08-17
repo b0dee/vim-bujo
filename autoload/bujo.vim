@@ -699,23 +699,6 @@ function! s:format_date_str(in, year, month, day = v:null, week_of_month=  v:nul
         \ "%Y", a:year, "g")
 endfunction
 
-
-function! s:open_or_switch_window(file_path) abort
-  let l:current_winnr = winnr()
-  let l:splitright = g:bujo_split_right ? "$" : "1"
-  
-  exe l:current_winnr . "wincmd w"
-  if match(expand("%:p"), expand(g:bujo_path)) >= 0 || match(expand("%:p"), "bujo://") >= 0
-    execute "bd %" 
-    "execute "edit " . fnameescape(a:file_path)
-    "return
-  endif
-
-  let l:winsize =  g:bujo_winsize
-  execute (g:bujo_split_right ? "botright" : "topleft") . " vertical " . ((l:winsize > 0)? (l:winsize*winwidth(0))/100 : -l:winsize) "new" 
-  execute "edit " . fnameescape(a:file_path)
-endfunction
-
 " TODO #4
 function! s:fix_index_collection_links(journal) abort
 endfunction
@@ -761,7 +744,7 @@ endfunction
 " Description: Open the index file for a journal or index file of journals
 " Notes: Additional arguments are appended to the 'journal' argument with
 " spaces between
-function! bujo#OpenIndex(list_journals, ...) abort
+function! bujo#Index(list_journals, ...) abort
   let l:journal = a:0 == 0 ? s:current_journal : join(a:000, " ")
   let l:journal_index = s:format_path(g:bujo_path,s:format_filename(l:journal), "/index.md")
   
@@ -771,7 +754,7 @@ function! bujo#OpenIndex(list_journals, ...) abort
   endif
 
   if a:list_journals
-    call s:open_or_switch_window(s:format_path("bujo://", "global", "index.md"))
+    execute "edit " . fnameescape(s:format_path("bujo://", "global", "index.md"))
     setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
     let l:content = ["# Journal Index", ""]
     for entry in readdir(expand(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f !~ "^[.]"})
@@ -782,11 +765,11 @@ function! bujo#OpenIndex(list_journals, ...) abort
   else
     call s:init_journal_index(l:journal)
     call s:fix_index_collection_links(l:journal)
-    call s:open_or_switch_window(l:journal_index)
+    execute "edit " . fnameescape(l:journal_index)
   endif
 endfunction
 
-function! bujo#OpenMigration(...) abort
+function! bujo#Migration(...) abort
   
 endfunction
 
@@ -808,19 +791,19 @@ endfunction
 "     `<<` ability to specify year (will be needed when close to year end
 "          i.e. December) and need to put things in for new year
 "     `tbd` move to custom collection?
-function! bujo#OpenDaily(...) abort
+function! bujo#Today(...) abort
   let l:journal = a:0 == 0 ? s:current_journal : join(a:000, " ")
   let l:daily_log = s:format_path(g:bujo_path, s:format_filename(l:journal), s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day()))
   " We're initialising this weeks daily log, do we have auto reflection
   " enabled?
   let l:log_exists = filereadable(l:daily_log)
   " if !l:log_exists && g:bujo_auto_reflection
-  "   return bujo#OpenMigration()
+  "   return bujo#Migration()
   " endif
 
   call s:init_daily(l:journal)
 
-  call s:open_or_switch_window(l:daily_log)
+  execute "edit " . fnameescape(l:daily_log)
   let l:content = readfile(l:daily_log)
   let l:row = matchstrlist(l:content, s:format_header_custom_date(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), str2nr(s:get_current_day())))
   " Set the month to be the top of the file
@@ -851,7 +834,7 @@ function! bujo#CreateEntry(type, is_urgent, ...) abort
   call writefile(s:list_append_entry(l:content, s:bujo_header_entries[a:type]["header"], s:bujo_header_entries[a:type]["list_char"], l:entry), l:daily_log)
 endfunction
 
-function! bujo#OpenFuture(...) abort
+function! bujo#Future(...) abort
   let l:future_log = s:format_path(g:bujo_path, s:current_journal, s:format_filename(s:bujo_future_filename)) 
 
   if a:0 == 0
@@ -865,7 +848,7 @@ function! bujo#OpenFuture(...) abort
   
   call s:init_future(l:year)
 
-  call s:open_or_switch_window(l:future_log)
+  execute "edit " . fnameescape(l:future_log)
   let l:content = readfile(l:future_log)
   let l:row = matchstrlist(l:content, s:format_header_custom_date(s:bujo_future_month_header, l:year, s:get_current_month(), 1))
   " Set the month to be the top of the file
@@ -950,7 +933,7 @@ function! bujo#Collection(bang, ...) abort
     let l:collections = s:list_collections(a:bang)
     let l:content = s:format_list_collections(l:collections)
     let l:journal_name = a:bang ? "global" : s:current_journal
-    call s:open_or_switch_window(s:format_path("bujo://", l:journal_name, "collections.md"))
+    execute "edit " . fnameescape(s:format_path("bujo://", l:journal_name, "collections.md"))
     setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe nowrap
     " for entry in readdir(expand(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f !~ "^[.]"})
     "   call add(l:content, "- [" . s:format_initial_case(entry). "]( " . entry . "/index.md" . " )")
@@ -996,11 +979,11 @@ function! bujo#Collection(bang, ...) abort
   let l:content = [ "# " . l:collection_print_name, "", "" ]
   call writefile(l:content, l:collection_path)
 
-  call s:open_or_switch_window(l:collection_path)
+  execute "edit " . fnameescape(l:collection_path)
 
 endfunction
 
-function! bujo#OpenBacklog(...) abort
+function! bujo#Backlog(...) abort
   let l:journal_dir = s:format_path(g:bujo_path, s:current_journal)
   let l:backlog = l:journal_dir . "/" . s:format_filename(s:bujo_backlog_filename)
   if s:mkdir_if_needed(s:current_journal) | return | endif
@@ -1020,7 +1003,7 @@ function! bujo#OpenBacklog(...) abort
   " Check if we need to create an entry
   " We do this before opening the split as we may want to do both
   if a:0 == 0
-    call s:open_or_switch_window(l:backlog)
+    execute "edit " . fnameescape(l:backlog)
   else
     let l:entry = substitute(join(a:000, " "), "\\(^[a-z]\\)", "\\U\\1", "g")
     let l:content = readfile(l:backlog)
@@ -1085,7 +1068,7 @@ endfunction
 
 " TODO - When initialising monthly should pull any info from future log for this year and month
 " TODO (In future) - When opening do a diff to pull any missing entries over from future log
-function! bujo#OpenMonthly(...) abort
+function! bujo#Monthly(...) abort
   if a:0 > 0  
     let l:month = a:1
     if l:month =~ "[0-9]+"
@@ -1111,7 +1094,7 @@ function! bujo#OpenMonthly(...) abort
   if s:mkdir_if_needed(s:current_journal) | return | endif
   call s:init_monthly(l:month)
 
-  call s:open_or_switch_window(l:monthly_log)
+  execute "edit " . fnameescape(l:monthly_log)
 endfunction
 
 function! bujo#MonthlyEntry(type, ...) abort
@@ -1162,7 +1145,7 @@ function! bujo#ListTasks(all_journals) abort
   endif
 
   let l:journal_name = len(l:journals) > 1 ? "global": l:journals[0]
-  call s:open_or_switch_window(s:format_path("bujo://", l:journal_name, "tasklist.md"))
+  execute "edit " . fnameescape(s:format_path("bujo://", l:journal_name, "tasklist.md"))
   setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
   call append(0, l:content)
   setlocal readonly nomodifiable
