@@ -17,7 +17,7 @@ let s:BUJO_MONTHLY = "monthly"
 let s:BUJO_FUTURE = "future"
 
 if !exists('g:bujo_path')
-	let g:bujo_path = '~/repos/bujo/'
+	let g:bujo_path = '~/bujo/'
 endif
 if !exists('g:bujo_default_journal')
   let g:bujo_default_journal = "Default"
@@ -275,7 +275,7 @@ function! s:format_header(header, journal = s:format_initial_case(s:current_jour
 endfunction
 
 function! s:format_header_custom_date(format, year, month, day) abort
-  let l:dow = s:get_day_of_week(a:year,a:month,a:day)
+  let l:dow = s:get_week_day(a:year,a:month,a:day)
   return substitute(
          \ substitute(
            \ substitute(
@@ -356,44 +356,56 @@ function! s:init_journal_index(journal) abort
   call writefile(l:content, l:journal_index)
 endfunction
 
-" TODO - Option to disable weekends
-function! s:init_daily(journal) abort
-  let l:formatted_daily_header = s:format_header(s:bujo_daily_header, a:journal)
-  let l:daily_log = s:format_path(g:bujo_path, a:journal, s:format_header_custom_date(s:bujo_daily_filename, s:get_current_year(), s:get_current_month(), s:get_current_day())) 
-
-  if s:mkdir_if_needed(a:journal) | return | endif
-  if filereadable(l:daily_log) | return | endif
-
-  let l:monthly_log = s:format_path(g:bujo_path, s:current_journal, s:format_header_custom_date(s:bujo_monthly_filename, s:get_current_year(), s:get_current_month(), 1))
+function! s:get_monthly_log_entries(year, month)
+  let l:monthly_log = s:format_path(g:bujo_path, s:current_journal, s:format_header_custom_date(s:bujo_monthly_filename, a:year, a:month, 1))
   if !filereadable(l:monthly_log) | call s:init_monthly(s:get_current_month()) | endif
   let l:monthly_content = readfile(l:monthly_log)
-  let l:boundaries = {}
+  let l:entries = {}
+  let l:prev_start = -1
   for i in range(len(g:bujo_header_entries_ordered))
     let l:key = g:bujo_header_entries_ordered[i]
-    let l:boundaries[l:key] = {
-          \ "start" : matchstrlist(l:monthly_content, escape(s:bujo_header_entries[l:key]["header"], "*"))[0]["idx"] + 1,
-          \ "end" : -1
-    \ }
-    if i > 0 
-      let l:prevkey = g:bujo_header_entries_ordered[i-1]
-      let l:boundaries[l:prevkey]["end"] =  matchstrlist(l:monthly_content, escape(s:bujo_header_entries[l:key]["header"], "*"))[0]["idx"]
-    endif
+    let l:start = matchstrlist(l:monthly_content, escape(s:bujo_header_entries[l:key]["header"], "*"))[0]["idx"] + 1
+    let l:end = i + 1 == len(g:bujo_header_entries_ordered) ? -1 : matchstrlist(l:monthly_content, escape(s:bujo_header_entries[g:bujo_header_entries_ordered[i + 1]]["header"], "*"))[0]["idx"] - 1
+    let l:entries[l:key] = l:monthly_content[l:start: l:end]
   endfor
+  return l:entries
+endfunction
 
-  let l:date = s:get_current_day()
-  let l:dow = s:get_day_of_week(s:get_current_year(), s:get_current_month(), l:date)
-  let l:day_header = s:format_header_custom_date(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), l:date)
-  let l:content = [l:day_header, ""]
+function! s:get_entries_from_block(block, date) abort
+  let l:entries = {}
   for key in g:bujo_header_entries_ordered
-    let l:entry_block = l:monthly_content[l:boundaries[key]["start"] : l:boundaries[key]["end"]]
-    call add(l:content, s:bujo_header_entries[key]["header"])
-    let l:entries = matchstrlist(l:entry_block, s:format_date_with_suffix(l:date))
-    for entry in l:entries
-      let l:line = substitute(l:entry_block[entry["idx"]], s:format_date_with_suffix(l:date) . ": ", "", "")
-      call add(l:content, l:line)
+    let l:entry_block = a:block[key]
+    let l:entries[key] = []
+    let l:matches = matchstrlist(l:entry_block, s:format_date_with_suffix(a:date))
+    for entry in l:matches
+      call add(l:entries[key], substitute(l:entry_block[entry["idx"]], s:format_date_with_suffix(a:date) . ": ", "", ""))
     endfor
+  endfor
+  return l:entries
+endfunction
+
+function! s:generate_daily_content(year,month,day) abort
+  let l:monthly_entries = s:get_monthly_log_entries(a:year, a:month)
+  let l:day_header = s:format_header_custom_date(s:bujo_daily_header, a:year, a:month, a:day)
+  let l:content = [l:day_header, ""]
+  let l:entries = s:get_entries_from_block(l:monthly_entries, a:day)
+  for key in g:bujo_header_entries_ordered
+    call add(l:content, s:bujo_header_entries[key]["header"])
+    call extend(l:content, l:entries[key])
     call add(l:content, "")
   endfor
+  return l:content
+endfunction
+
+" TODO - Option to disable weekends
+function! s:init_daily() abort
+  let l:formatted_daily_header = s:format_header(s:bujo_daily_header, s:current_journal)
+  let l:daily_log = s:format_path(g:bujo_path, s:current_journal, s:format_header_custom_date(s:bujo_daily_filename, s:get_current_year(), s:get_current_month(), s:get_current_day())) 
+
+  if s:mkdir_if_needed(s:current_journal) | return | endif
+  if filereadable(l:daily_log) | return | endif
+
+  let l:content = s:generate_daily_content(s:get_current_year(), s:get_current_month(), s:get_current_day())
   " Write output to file
   call writefile(l:content, l:daily_log)
   call bujo#Outstanding()
@@ -647,7 +659,7 @@ endfunction
 " 4 = Thursday
 " 5 = Friday
 " 6 = Saturday
-function! s:get_day_of_week(year, month, day) abort
+function! s:get_week_day(year, month, day) abort
   " TODO - Ability to shift these aroud according to what day of the week you
   " want to start on
   let l:century_codes = {17: 4, 18: 2, 19: 0, 20: 6, 21: 4, 22: 2, 23:0}
@@ -658,7 +670,7 @@ function! s:get_day_of_week(year, month, day) abort
 endfunction
 
 function! s:get_week_of_month(year,month,day) abort
-  let l:first_day_of_month = s:get_day_of_week(a:year,a:month,1)
+  let l:first_day_of_month = s:get_week_day(a:year,a:month,1)
   let l:first_week_start_of_month = g:bujo_week_start >= l:first_day_of_month ? g:bujo_week_start - l:first_day_of_month : (7 % l:first_day_of_month) + g:bujo_week_start
   if l:first_week_start_of_month < a:day
     return ((a:day - l:first_week_start_of_month) / 7) + 1
@@ -669,7 +681,7 @@ function! s:get_week_of_month(year,month,day) abort
 endfunction
 
 function! s:get_daily_filename(year, month, day) abort
-  let l:first_day_of_month = s:get_day_of_week(a:year,a:month,1)
+  let l:first_day_of_month = s:get_week_day(a:year,a:month,1)
   let l:first_week_start_of_month = g:bujo_week_start >= l:first_day_of_month ? g:bujo_week_start - l:first_day_of_month : (7 % l:first_day_of_month) + g:bujo_week_start
   let l:week_of_month = s:get_week_of_month(a:year, a:month, a:day)
   if a:day < l:first_week_start_of_month
@@ -746,7 +758,7 @@ function! bujo#Index(list_journals, ...) abort
   endif
 
   if a:list_journals
-    execute "edit " . fnameescape(s:format_path("bujo://", "global", "index.md"))
+    execute "edit " . fnameescape(s:format_path("bujo://", expand(g:bujo_path), "index.md"))
     setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
     let l:content = ["# Journal Index", ""]
     for entry in readdir(expand(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f !~ "^[.]"})
@@ -816,15 +828,14 @@ function! bujo#Outstanding() abort
   " Don't bother opening anything if we haven't foud any open tasks
   if len(l:outstanding_buffer) == 0 | return | endif
 
-  execute "belowright split " . fnameescape(s:format_path("bujo://", s:current_journal, "tasklist.md"))
+  execute "belowright split " . fnameescape(s:format_path("bujo://", expand(g:bujo_path), s:current_journal, "outstanding.md"))
   setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
   call append(0, l:outstanding_buffer)
   call cursor(1, 0) 
 endfunction
 
-function! bujo#Today(...) abort
-  let l:journal = a:0 == 0 ? s:current_journal : join(a:000, " ")
-  let l:daily_log = s:format_path(g:bujo_path, s:format_filename(l:journal), s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day()))
+function! bujo#Today() abort
+  let l:daily_log = s:format_path(g:bujo_path, s:current_journal, s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day()))
   " We're initialising this weeks daily log, do we have auto reflection
   " enabled?
   let l:log_exists = filereadable(l:daily_log)
@@ -832,18 +843,130 @@ function! bujo#Today(...) abort
   "   return bujo#Migration()
   " endif
 
-  call s:init_daily(l:journal)
+  call s:init_daily()
 
   execute "edit " . fnameescape(l:daily_log)
-  let l:content = readfile(l:daily_log)
-  let l:row = matchstrlist(l:content, s:format_header_custom_date(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), str2nr(s:get_current_day())))
-  " Set the month to be the top of the file
-  " + 1 as index starts at 0 + configured scrolloff distance to put the header
-  " at the top of the buffer
-  call cursor(l:row[0]["idx"] + 1 + &scrolloff, 0) 
-  execute "normal z\<ENTER>"
- 
 endfunction
+
+
+function! s:date_add_days(year,month,day,add) abort
+  let l:year = a:year
+  let l:month = a:month
+  let l:day = a:day + a:add
+
+  let l:is_leap = s:is_leap_year(l:year)
+  let l:days_in_month = l:month == 2 && l:is_leap ? 29 : s:bujo_months[l:month-1]["days"]
+
+  while l:day > l:days_in_month
+    let l:day -= l:days_in_month
+    let l:month += 1
+    let l:days_in_month = l:month == 2 && l:is_leap ? 29 : s:bujo_months[l:month-1]["days"]
+    if l:month > 12
+      let l:year += 1
+      let l:month -= 12
+      let l:is_leap = s:is_leap_year(l:year)
+    endif
+  endwhile
+  " If we're passed a negative value
+  if l:day < 0 
+    let l:day = l:day * -1
+    let l:month -= 1
+    let l:days_in_month = l:month == 2 && l:is_leap ? 29 : s:bujo_months[l:month-1]["days"]
+    while l:day > l:days_in_month
+      let l:day -= l:days_in_month
+      let l:month -= 1
+      let l:days_in_month = l:month == 2 && l:is_leap ? 29 : s:bujo_months[l:month-1]["days"]
+      if l:month < 1
+        let l:year -= 1
+        let l:month += 12
+        let l:is_leap = s:is_leap_year(l:year)
+      endif
+    endwhile
+    let l:day = l:days_in_month - l:day
+  endif
+  return [l:year, l:month, l:day]
+endfunction
+  
+function! bujo#TestAddDays(year,month,day, add) abort
+  return s:date_add_days(a:year,a:month,a:day,a:add)
+endfunction
+
+function! bujo#Tomorrow() abort
+  let l:date = s:date_add_days(s:get_current_year(), s:get_current_month(), s:get_current_day(), 1)
+  let l:day = date[2]
+  let l:filename = s:format_path(g:bujo_path, s:current_journal, s:get_daily_filename(l:date[0], l:date[1], l:date[2]))
+
+  let l:content = s:generate_daily_content(date[0], date[1], date[2])
+  execute "edit " . fnameescape(l:filename)
+  setlocal filetype=markdown noswapfile bufhidden=wipe
+  call append(0, l:content)
+  call cursor(1, 0) 
+endfunction
+
+function! bujo#Yesterday() abort
+  let l:todays_daily = s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day())
+  try
+    let l:filename = sort(readdir(s:format_path(g:bujo_path, s:current_journal), {f -> f =~ "daily.*[.]md$" && f !~ l:todays_daily}), "s:outstanding_sort")[0]
+    let l:filepath = s:format_path(g:bujo_path, s:current_journal, l:filename)
+    execute "edit " . fnameescape(l:filepath)
+  catch
+    let l:date = s:date_add_days(s:get_current_year(), s:get_current_month(), s:get_current_day(), -1)
+    let l:day = date[2]
+    let l:filename = s:format_path(g:bujo_path, s:current_journal, s:get_daily_filename(l:date[0], l:date[1], l:date[2]))
+    let l:content = s:generate_daily_content(l:date[0], l:date[1], l:date[2])
+    call writefile(l:content, l:filename)
+    execute "edit " . fnameescape(l:filename)
+  endtry
+endfunction
+
+function! s:get_days_since_week_start(year,month,day) abort
+  let l:dow = s:get_week_day(a:year, a:month, a:day)
+  return l:dow - g:bujo_week_start
+endfunction
+
+function! s:preview_week(year,month,day) abort
+  let l:week_start = s:date_add_days(a:year, a:month, a:day, -s:get_days_since_week_start(a:year,a:month,a:day))
+  let l:content = []
+  for day in range(6) 
+    if day > 0 | call add(l:content, "---") | endif
+    let l:current_date = s:date_add_days(l:week_start[0], l:week_start[1], l:week_start[2], day)
+    let l:filename = s:format_path(g:bujo_path, s:current_journal, s:get_daily_filename(l:current_date[0], l:current_date[1], l:current_date[2]))
+    if filereadable(l:filename)
+      call extend(l:content, readfile(l:filename))
+    else
+      call extend(l:content, s:generate_daily_content(l:current_date[0], l:current_date[1], l:current_date[2]))
+    endif
+  endfor
+  return l:content
+endfunction
+
+function! bujo#ThisWeek() abort
+  let l:content = s:preview_week(s:get_current_year(), s:get_current_month(), s:get_current_day())
+  execute "edit " . fnameescape(s:format_path("bujo://", expand(g:bujo_path), s:current_journal, "this_week.md"))
+  setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
+  call append(0, l:content)
+  call cursor(1, 0) 
+endfunction
+
+function! bujo#NextWeek() abort
+  let l:date = s:date_add_days(s:get_current_year(), s:get_current_month(), s:get_current_day(), 7)
+  let l:content = s:preview_week(l:date[0], l:date[1], l:date[2])
+  execute "edit " . fnameescape(s:format_path("bujo://", expand(g:bujo_path), s:current_journal, "next_week.md"))
+  setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
+  call append(0, l:content)
+  call cursor(1, 0) 
+endfunction
+
+function! bujo#LastWeek() abort
+  let l:date = s:date_add_days(s:get_current_year(), s:get_current_month(), s:get_current_day(), -7)
+  let l:content = s:preview_week(l:date[0], l:date[1], l:date[2])
+  execute "edit " . fnameescape(s:format_path("bujo://", expand(g:bujo_path), s:current_journal, "last_week.md"))
+  setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
+  call append(0, l:content)
+  call cursor(1, 0) 
+
+endfunction
+
 " TODO - Handle displaying urgent tasks
 function! bujo#CreateEntry(type, is_urgent, ...) abort
 	if a:0 == 0 
@@ -964,7 +1087,7 @@ function! bujo#Collection(bang, ...) abort
     let l:collections = s:list_collections(a:bang)
     let l:content = s:format_list_collections(l:collections)
     let l:journal_name = a:bang ? "global" : s:current_journal
-    execute "edit " . fnameescape(s:format_path("bujo://", l:journal_name, "collections.md"))
+    execute "edit " . fnameescape(s:format_path("bujo://", expand(g:bujo_path), l:journal_name, "collections.md"))
     setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe nowrap
     " for entry in readdir(expand(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f !~ "^[.]"})
     "   call add(l:content, "- [" . s:format_initial_case(entry). "]( " . entry . "/index.md" . " )")
@@ -1076,11 +1199,11 @@ function! s:init_monthly(month) abort
       call add(l:content, l:row)
     endif
     for day in range(1, s:bujo_months[a:month - 1]["days"])
-      let l:row = "| " . s:bujo_days[s:get_day_of_week(s:get_current_year(), a:month, day)]["letter"] . day . "." . repeat(" ", len(l:day_header) - (day / 10 < 1 ? 3: 4)) . " |"
+      let l:row = "| " . s:bujo_days[s:get_week_day(s:get_current_year(), a:month, day)]["letter"] . day . "." . repeat(" ", len(l:day_header) - (day / 10 < 1 ? 3: 4)) . " |"
       for header in g:bujo_monthly_table_headers
         let l:padding = ((len(header["title"]) + 2) / 2) - (len(l:empty_checkbox) / 2)
         let l:cron_expr = header["cron"]
-        if s:process_cron(l:cron_expr, s:get_current_year(), a:month, day, s:get_day_of_week(s:get_current_year(), a:month, day))
+        if s:process_cron(l:cron_expr, s:get_current_year(), a:month, day, s:get_week_day(s:get_current_year(), a:month, day))
           let l:cell_content = l:empty_checkbox 
         else
           let l:cell_content = repeat(" ", len(l:empty_checkbox))
@@ -1176,7 +1299,7 @@ function! bujo#ListTasks(all_journals) abort
   endif
 
   let l:journal_name = len(l:journals) > 1 ? "global": l:journals[0]
-  execute "edit " . fnameescape(s:format_path("bujo://", l:journal_name, "tasklist.md"))
+  execute "edit " . fnameescape(s:format_path("bujo://", expand(g:bujo_path), l:journal_name, "tasklist.md"))
   setlocal filetype=markdown buftype=nofile noswapfile bufhidden=wipe
   call append(0, l:content)
   setlocal readonly nomodifiable

@@ -37,7 +37,12 @@ command! -nargs=* -bang FutureNote   call bujo#FutureEntry(bujo#GetInternalVaria
 command! -nargs=*       MonthlyTask  call bujo#MonthlyEntry(bujo#GetInternalVariable('BUJO_TASK'), <f-args>)
 
 
-command! -nargs=* Today       call bujo#Today(<f-args>)
+command! -nargs=* Today       call bujo#Today()
+command! -nargs=* Tomorrow    call bujo#Tomorrow()
+command! -nargs=* Yesterday   call bujo#Yesterday()
+command! -nargs=* Thisweek    call bujo#ThisWeek()
+command! -nargs=* Nextweek    call bujo#NextWeek()
+command! -nargs=* Lastweek    call bujo#LastWeek()
 command! -nargs=* Future      call bujo#Future(<f-args>)
 command! -nargs=* Monthly     call bujo#Monthly(<f-args>)
 command! -nargs=* Backlog      call bujo#Backlog(<f-args>)
