@@ -14,12 +14,6 @@ if !exists('g:bujo_journal_statusline_append')
   let g:bujo_journal_statusline_append = "Journal"
 endif
 
-function! BujoCurrent() abort
-  let l:prepend = len(g:bujo_journal_statusline_prepend) == 0 ? "": " " . g:bujo_journal_statusline_prepend
-  let l:append = len(g:bujo_journal_statusline_append) == 0 ? "": " " . g:bujo_journal_statusline_append
-  return l:prepend . bujo#FormatFromPath(bujo#GetInternalVariable('current_journal')) . l:append
-endfunction
-
 command! -nargs=* -bang Journal      call bujo#Journal(<bang>0, <f-args>)
 command! -nargs=* -bang Index        call bujo#Index(<bang>0, <f-args>)
 command! -nargs=* -bang Collection   call bujo#Collection(<bang>0, <f-args>)

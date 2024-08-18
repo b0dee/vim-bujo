@@ -696,6 +696,12 @@ endfunction
 function! s:fix_index_collection_links(journal) abort
 endfunction
 
+function! bujo#Head() abort
+  let l:prepend = len(g:bujo_journal_statusline_prepend) == 0 ? "": " " . g:bujo_journal_statusline_prepend
+  let l:append = len(g:bujo_journal_statusline_append) == 0 ? "": " " . g:bujo_journal_statusline_append     
+  return l:prepend . s:format_title_case(s:current_journal) . l:append           
+endfunction
+
 " Get and set current journal (offer to create if it doesn't exist)
 function! bujo#Journal(print_current, ...) abort
   let l:journal_name = s:format_title_case(join(a:000, " "))
