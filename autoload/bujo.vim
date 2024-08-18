@@ -342,8 +342,7 @@ function! s:mkdir_if_needed(journal) abort
 endfunction
 
 function! s:init_journal_index(journal) abort
-  let l:journal_dir = expand(g:bujo_path) . s:format_filename(a:journal)
-  let l:journal_index = l:journal_dir . "/index.md"
+  let l:journal_index = s:format_path(g:bujo_path, s:format_filename(a:journal), "/index.md")
   " We have already initialised index 
   if filereadable(l:journal_index) | return | endif
 
@@ -543,7 +542,7 @@ function! s:format_list_collections(collections) abort
 endfunction
 
 function! s:formatted_daily_header(day, date) abort
-  return s:format_date_str(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), a:date, a:day)
+  return s:format_date_str(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), a:date)
   let l:formatted_daily_header = s:format_header(s:bujo_daily_header, a:journal) 
 endfunction
 
@@ -680,31 +679,29 @@ function! s:get_week_of_month(year,month,day) abort
   endif
 endfunction
 
-function! s:get_daily_filename(year, month, day) abort
-  let l:first_day_of_month = s:get_week_day(a:year,a:month,1)
-  let l:first_week_start_of_month = g:bujo_week_start >= l:first_day_of_month ? g:bujo_week_start - l:first_day_of_month : (7 % l:first_day_of_month) + g:bujo_week_start
-  let l:week_of_month = s:get_week_of_month(a:year, a:month, a:day)
-  if a:day < l:first_week_start_of_month
-    let l:month = a:month-1
-  else 
-    let l:month = a:month
-  endif
-  return s:format_date_str(s:bujo_daily_filename, a:year, l:month, a:day, l:week_of_month)
-endfunction
 
 
-function! s:format_date_str(in, year, month, day = v:null, week_of_month=  v:null) abort
+function! s:format_date_str(in, year, month, day) abort
+  let l:month = a:month < 10 ? "0" . str2nr(a:month) : a:month
+  let l:day = a:day < 10 ? "0" . str2nr(a:day) : a:day
+  let l:week_of_month = s:get_week_of_month(a:year,a:month,a:day)
   return substitute(
         \ substitute(
           \ substitute(
-            \ substitute(a:in, "%d", a:day, "g"),
-            \ "%w", a:week_of_month, "g"),
-          \ "%m", a:month, "g"),
+            \ substitute(a:in, "%d", l:day, "g"),
+            \ "%w", l:week_of_month, "g"),
+          \ "%m", l:month, "g"),
         \ "%Y", a:year, "g")
 endfunction
 
 " TODO #4
 function! s:fix_index_collection_links(journal) abort
+endfunction
+
+function! bujo#Head() abort
+  let l:prepend = len(g:bujo_journal_statusline_prepend) == 0 ? "": " " . g:bujo_journal_statusline_prepend
+  let l:append = len(g:bujo_journal_statusline_append) == 0 ? "": " " . g:bujo_journal_statusline_append     
+  return l:prepend . s:format_title_case(s:current_journal) . l:append           
 endfunction
 
 " Get and set current journal (offer to create if it doesn't exist)
@@ -835,7 +832,7 @@ function! bujo#Outstanding() abort
 endfunction
 
 function! bujo#Today() abort
-  let l:daily_log = s:format_path(g:bujo_path, s:current_journal, s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day()))
+  let l:daily_log = s:format_path(g:bujo_path, s:current_journal, s:format_date_str(s:bujo_daily_filename, s:get_current_year(), s:get_current_month(), s:get_current_day()))
   " We're initialising this weeks daily log, do we have auto reflection
   " enabled?
   let l:log_exists = filereadable(l:daily_log)
@@ -894,7 +891,7 @@ endfunction
 function! bujo#Tomorrow() abort
   let l:date = s:date_add_days(s:get_current_year(), s:get_current_month(), s:get_current_day(), 1)
   let l:day = date[2]
-  let l:filename = s:format_path(g:bujo_path, s:current_journal, s:get_daily_filename(l:date[0], l:date[1], l:date[2]))
+  let l:filename = s:format_path(g:bujo_path, s:current_journal, s:format_date_str(s:bujo_daily_filename, l:date[0], l:date[1], l:date[2]))
 
   let l:content = s:generate_daily_content(date[0], date[1], date[2])
   execute "edit " . fnameescape(l:filename)
@@ -904,7 +901,7 @@ function! bujo#Tomorrow() abort
 endfunction
 
 function! bujo#Yesterday() abort
-  let l:todays_daily = s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day())
+  let l:todays_daily = s:format_date_str(s:bujo_daily_filename, s:get_current_year(), s:get_current_month(), s:get_current_day())
   try
     let l:filename = sort(readdir(s:format_path(g:bujo_path, s:current_journal), {f -> f =~ "daily.*[.]md$" && f !~ l:todays_daily}), "s:outstanding_sort")[0]
     let l:filepath = s:format_path(g:bujo_path, s:current_journal, l:filename)
@@ -912,7 +909,7 @@ function! bujo#Yesterday() abort
   catch
     let l:date = s:date_add_days(s:get_current_year(), s:get_current_month(), s:get_current_day(), -1)
     let l:day = date[2]
-    let l:filename = s:format_path(g:bujo_path, s:current_journal, s:get_daily_filename(l:date[0], l:date[1], l:date[2]))
+    let l:filename = s:format_path(g:bujo_path, s:current_journal, s:format_date_str(s:bujo_daily_filename, l:date[0], l:date[1], l:date[2]))
     let l:content = s:generate_daily_content(l:date[0], l:date[1], l:date[2])
     call writefile(l:content, l:filename)
     execute "edit " . fnameescape(l:filename)
@@ -930,7 +927,7 @@ function! s:preview_week(year,month,day) abort
   for day in range(6) 
     if day > 0 | call add(l:content, "---") | endif
     let l:current_date = s:date_add_days(l:week_start[0], l:week_start[1], l:week_start[2], day)
-    let l:filename = s:format_path(g:bujo_path, s:current_journal, s:get_daily_filename(l:current_date[0], l:current_date[1], l:current_date[2]))
+    let l:filename = s:format_path(g:bujo_path, s:current_journal, s:format_date_str(s:bujo_daily_filename, l:current_date[0], l:current_date[1], l:current_date[2]))
     if filereadable(l:filename)
       call extend(l:content, readfile(l:filename))
     else
@@ -981,7 +978,7 @@ function! bujo#CreateEntry(type, is_urgent, ...) abort
 	let l:entry = l:entry
 
   let l:journal = s:current_journal
-  let l:daily_log = s:format_path(g:bujo_path, l:journal, s:get_daily_filename(s:get_current_year(), s:get_current_month(), s:get_current_day()))
+  let l:daily_log = s:format_path(g:bujo_path, l:journal, s:format_date_str(s:bujo_daily_filename, s:get_current_year(), s:get_current_month(), s:get_current_day()))
 
   call s:init_daily(l:journal)
   let l:content = readfile(l:daily_log)
