@@ -342,8 +342,7 @@ function! s:mkdir_if_needed(journal) abort
 endfunction
 
 function! s:init_journal_index(journal) abort
-  let l:journal_dir = expand(g:bujo_path) . s:format_filename(a:journal)
-  let l:journal_index = l:journal_dir . "/index.md"
+  let l:journal_index = s:format_path(g:bujo_path, s:format_filename(a:journal), "/index.md")
   " We have already initialised index 
   if filereadable(l:journal_index) | return | endif
 
@@ -543,7 +542,7 @@ function! s:format_list_collections(collections) abort
 endfunction
 
 function! s:formatted_daily_header(day, date) abort
-  return s:format_date_str(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), a:date, a:day)
+  return s:format_date_str(s:bujo_daily_header, s:get_current_year(), s:get_current_month(), a:date)
   let l:formatted_daily_header = s:format_header(s:bujo_daily_header, a:journal) 
 endfunction
 
@@ -682,13 +681,16 @@ endfunction
 
 
 
-function! s:format_date_str(in, year, month, day = v:null, week_of_month=  v:null) abort
+function! s:format_date_str(in, year, month, day) abort
+  let l:month = a:month < 10 ? "0" . str2nr(a:month) : a:month
+  let l:day = a:day < 10 ? "0" . str2nr(a:day) : a:day
+  let l:week_of_month = s:get_week_of_month(a:year,a:month,a:day)
   return substitute(
         \ substitute(
           \ substitute(
-            \ substitute(a:in, "%d", a:day, "g"),
-            \ "%w", a:week_of_month, "g"),
-          \ "%m", a:month, "g"),
+            \ substitute(a:in, "%d", l:day, "g"),
+            \ "%w", l:week_of_month, "g"),
+          \ "%m", l:month, "g"),
         \ "%Y", a:year, "g")
 endfunction
 
