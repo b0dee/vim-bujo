@@ -980,7 +980,7 @@ function! bujo#CreateEntry(type, is_urgent, ...) abort
   let l:journal = s:current_journal
   let l:daily_log = s:format_path(g:bujo_path, l:journal, s:format_date_str(s:bujo_daily_filename, s:get_current_year(), s:get_current_month(), s:get_current_day()))
 
-  call s:init_daily(l:journal)
+  call s:init_daily()
   let l:content = readfile(l:daily_log)
   call writefile(s:list_append_entry(l:content, s:bujo_header_entries[a:type]["header"], s:bujo_header_entries[a:type]["list_char"], l:entry), l:daily_log)
 endfunction
