@@ -3,7 +3,8 @@
 # Use privileged mode, to e.g. ignore $CDPATH.
 set -p
 
+# CD to test folder
 cd "$( dirname "${BASH_SOURCE[0]}" )" || exit
 
-: "${VADER_TEST_VIM:=vim}"
-eval "$VADER_TEST_VIM -Nu vimrc -c '+Vader! bujo.vader'" && exit 0 || exit 1
+# Run tests
+vim -Nu vimrc -c '+Vader! bujo.vader'
