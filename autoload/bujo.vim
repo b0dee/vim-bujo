@@ -1,42 +1,42 @@
 " The functions contained within this file are for internal use only.  For the
 " official API, see the commented functions in plugin/bujo.vim.
 
-if exists('g:autoloadedBujo')
-  finish
-endif
+if exists('g:autoloadedBujo') | finish | endif
 let g:autoloadedBujo = 1
+
+" Public variables
+if !exists('g:bujoPath')                     | let g:bujoPath = '~/bujo/'                               | endif
+if !exists('g:bujoDefaultJournal')           | let g:bujoDefaultJournal = "Default"                     | endif
+if !exists('g:bujoSplitRight')               | let g:bujoSplitRight = &splitright                       | endif
+if !exists('g:bujoAutoReflection')           | let g:bujoAutoReflection = v:true                        | endif
+if !exists('g:bujoDailySkipWeekend')         | let g:bujoDailySkipWeekend = v:false                     | endif
+if !exists('g:bujoWinsize')                  | let g:bujoWinsize = 50                                   | endif
+if !exists('g:bujoMonthlyTableEnabled')      | let g:bujoMonthlyTableEnabled = v:true                   | endif
+if !exists('g:bujoMonthlyTableAlign')        | let g:bujoMonthlyTableAlign = v:true                     | endif
+if !exists('g:bujoWeekStart')                | let g:bujoWeekStart = 1                                  | endif
+if !exists('g:bujoJournalStatuslinePrepend') | let g:bujoJournalStatuslinePrepend = ""                  | endif
+if !exists('g:bujoJournalStatuslineAppend')  | let g:bujoJournalStatuslineAppend = "Journal"            | endif
+if !exists('g:bujoIndexIncludeFuture')       | let g:bujoIndexIncludeFuture = v:true                    | endif
+if !exists('g:bujoIndexIncludeMonthly')      | let g:bujoIndexIncludeMonthly = v:true                   | endif
+if !exists('g:bujoIndexIncludeDaily ')       | let g:bujoIndexIncludeDaily  = v:true                    | endif
+if !exists('g:bujoIndexIncludeBacklog ')     | let g:bujoIndexIncludeBacklog  = v:true                  | endif
+if !exists('g:bujoBacklogHeader')            | let g:bujoBacklogHeader =  "# {journal} Backlog"         | endif
+if !exists('g:bujoFutureHeader')             | let g:bujoFutureHeader =  "# {journal} Future Log - %Y"  | endif
+if !exists('g:bujoMonthlyHeader')            | let g:bujoMonthlyHeader = "# %B %Y"                      | endif
 
 
 " Constants/ Enums
-let s:BUJONOTE = "note"
-let s:BUJOTASK = "task"
-let s:BUJOEVENT = "event"
-let s:BUJODAILY = "daily"
+let s:BUJONOTE    = "note"
+let s:BUJOTASK    = "task"
+let s:BUJOEVENT   = "event"
+let s:BUJODAILY   = "daily"
 let s:BUJOBACKLOG = "backlog"
 let s:BUJOMONTHLY = "monthly"
-let s:BUJOFUTURE = "future"
+let s:BUJOFUTURE  = "future"
 
-if !exists('g:bujoPath')
-	let g:bujoPath = '~/bujo/'
-endif
-if !exists('g:bujoDefaultJournal')
-  let g:bujoDefaultJournal = "Default"
-endif
-if !exists('g:bujoSplitRight')
-  let g:bujoSplitRight = &splitright
-endif
-if !exists('g:bujoAutoReflection')
-  let g:bujoAutoReflection = v:true
-endif
-if !exists('g:bujoDailySkipWeekend')
-  let g:bujoDailySkipWeekend = v:false
-endif
-
+" Private variables
 " Daily Log vars
 let s:bujoDailyFilename = s:BUJODAILY . "_%Y-%m-%d.md"
-if !exists('g:bujoWinsize')
-	let g:bujoWinsize = 50
-endif
 let s:bujoDailyHeader =  "# %A %B %d" 
 let s:bujoDailyTaskHeader =  "**Tasks:**"
 let s:bujoDailyEventHeader =  "**Events:**" 
@@ -85,75 +85,19 @@ if exists("g:bujoHeaderEntries")
   call extend(s:bujoHeaderEntries, g:bujoHeaderEntries)
 endif
 
-" Options: monthLong, monthShort
-" 0 = Don't include header
-" 1 = Include header
-" 2 = Smart inclusion only if events scheduled for this day
-if !exists('g:bujoDailyIncludeEventHeader')
-	let g:bujoDailyIncludeEventHeader = 0
-endif
-
 " Future Log vars
 let s:bujoFutureFilename = s:BUJOFUTURE . "_%Y.md"
-if !exists('g:bujoFutureHeader')
-	let g:bujoFutureHeader =  "# {journal} Future Log - %Y" 
-endif
 let s:bujoFutureMonthHeader =  "# %B" 
 
 " Monthly Log vars
 let s:bujoMonthlyFilename = s:BUJOMONTHLY . "_%Y_%m.md"
-if !exists('g:bujoMonthlyHeader')
-	let g:bujoMonthlyHeader = "# %B %Y"
-endif
-if !exists('g:bujoMonthlyTableEnabled')
-	let g:bujoMonthlyTableEnabled = v:true
-endif
-if !exists('g:bujoMonthlyTableAlign')
-	let g:bujoMonthlyTableAlign = v:true
-endif
-
-if !exists('g:bujoDefineDefaultMonthlyTableHeaders')
-  let g:bujoDefineDefaultMonthlyTableHeaders = v:true
-endif
-
-if !exists('g:bujoMonthlyTableHeaders') && g:bujoDefineDefaultMonthlyTableHeaders
-  let g:bujoMonthlyTableHeaders = [ 
-  \ {
-  \		"title":"Gratitude",
-  \		"cron":"* * * *"
-  \ },
-  \ {
-  \		"title":"Meditation",
-  \		"cron":"* * * *"
-  \ },
-  \ {
-  \		"title":"Reading",
-  \		"cron":"1,3,4,5-9 * * *"
-  \ }
-  \ ]
-endif
 
 " Backlog vars
 let s:bujoBacklogFilename = "backlog.md"
-if !exists('g:bujoBacklogHeader')
-	let g:bujoBacklogHeader =  "# {journal} Backlog" 
-endif
 
 
 " Index vars
 let s:bujoIndexHeader = "# {journal} Index"
-if !exists('g:bujoIndexEnableFuture')
-	let g:bujoIndexEnableFuture = v:true
-endif
-if !exists('g:bujoIndexEnableMonthly')
-	let g:bujoIndexEnableMonthly = v:true
-endif
-if !exists('g:bujoIndexEnableDaily ')
-	let g:bujoIndexEnableDaily  = v:true
-endif
-if !exists('g:bujoIndexEnableBacklog ')
-	let g:bujoIndexEnableBacklog  = v:true
-endif
 let s:bujoIndexEntries = [
 \ { 
 \  "name": "Future Log",
@@ -177,23 +121,6 @@ let s:bujoIndexEntries = [
 if exists("g:bujoIndexEntries") 
   call extend(s:bujoIndexEntries, g:bujoIndexEntries)
 endif
-
-if !exists('g:bujoWeekStart') || g:bujoWeekStart < 0 || g:bujoWeekStart > 7
-  let g:bujoWeekStart = 1 
-endif
-
-let s:dateSuffixes = {
-\ 1: "st",
-\ 2: "nd",
-\ 3: "rd",
-\ 4: "th",
-\ 5: "th",
-\ 6: "th",
-\ 7: "th",
-\ 8: "th",
-\ 9: "th",
-\ 0: "th",
-\ }
 
 let s:bujoDays = { 
 \ 0: { "letter": "S", "short": "Sun", "long": "Sunday"},
@@ -225,11 +152,8 @@ let s:bujoMonths = [
 
 if !exists('g:bujoVaderTesting')
   let g:bujoVaderTesting = v:false
-endif
-if !exists('g:bujoVaderMkdirChoice')
   let g:bujoVaderMkdirChoice = 1
 endif
-
 
 function! s:stripWhitespace(input) abort
   return substitute(substitute(a:input, '^ *', '', "g"), " *$", "", "g")
@@ -244,10 +168,15 @@ function! s:formatTitleCase(input) abort
 endfunction
 
 function! s:formatDateWithSuffix(date) abort
-  if a:date >= 10 && a:date <= 20
+  if a:date[-1:-1] == 1 
+    return a:date . "st"
+  elseif a:date[-1:-1] == 2
+    return a:date . "nd"
+  elseif a:date[-1:-1] == 3
+    return a:date . "rd"
+  else 
     return a:date . "th"
   endif
-  return a:date . s:dateSuffixes[a:date[-1:-1]]
 endfunction
 
 function! s:formatFilename(filename)  abort
@@ -1116,6 +1045,14 @@ function! bujo#Backlog(...) abort
   endif
 endfunction
 
+" Object Structure
+" let g:bujoHabits = [ 
+" \ {
+" \		"title":"Example",
+" \		"cron":"* * * *"
+" \ },
+" \ ]
+
 function! s:initMonthly(month) abort
   let l:monthlyLog = s:formatPath(g:bujoPath, s:currentJournal, s:formatHeaderCustomDate(s:bujoMonthlyFilename, s:getCurrentYear(), a:month, 1))
   let l:futureLog = s:formatPath(g:bujoPath,s:currentJournal,s:formatHeaderCustomDate(s:bujoFutureFilename,s:getCurrentYear(), 1, 1))
@@ -1134,7 +1071,7 @@ function! s:initMonthly(month) abort
     let l:emptyCheckbox = "[ ]"
     let l:tableHorizontalBorder = "|" . repeat("-",len(l:dayHeader) + 1)
     let l:row = "| " . l:dayHeader
-    for header in g:bujoMonthlyTableHeaders
+    for header in g:bujoHabits
       let l:tableHorizontalBorder .= "-+" . repeat("-", len(s:formatHeader(header["title"])) + 1)
       let l:row .= " | " . s:formatHeader(header["title"])
     endfor
@@ -1144,14 +1081,14 @@ function! s:initMonthly(month) abort
     call add(l:content, l:row)
     if g:bujoMonthlyTableAlign
       let l:row = "| :" . repeat("-", len(l:dayHeader) - 1) . " |"
-      for header in g:bujoMonthlyTableHeaders
+      for header in g:bujoHabits
         let l:row .= " :" . repeat("-", len(header["title"]) - 2) . ": |"
       endfor
       call add(l:content, l:row)
     endif
     for day in range(1, s:bujoMonths[a:month - 1]["days"])
       let l:row = "| " . s:bujoDays[s:getWeekDay(s:getCurrentYear(), a:month, day)]["letter"] . day . "." . repeat(" ", len(l:dayHeader) - (day / 10 < 1 ? 3: 4)) . " |"
-      for header in g:bujoMonthlyTableHeaders
+      for header in g:bujoHabits
         let l:padding = ((len(header["title"]) + 2) / 2) - (len(l:emptyCheckbox) / 2)
         let l:cronExpr = header["cron"]
         if s:processCron(l:cronExpr, s:getCurrentYear(), a:month, day, s:getWeekDay(s:getCurrentYear(), a:month, day))
@@ -1256,3 +1193,8 @@ endfunction
 function! bujo#VaderCall(funcname, ...) abort
   return call(a:funcname, a:000)
 endfunction
+
+" TODO - Remove *entriesOrdered variables and rework functions to handle missing elements if possible 
+" TODO - Make everything use custom functions to replace dates in strings
+" TODO - Replace %<char> with {year},{month},{day},{yr}(for short year) 
+" TODO - Have Future/Monthly/Daily log links in Index to take to a virtual buffer listing in descending order 
