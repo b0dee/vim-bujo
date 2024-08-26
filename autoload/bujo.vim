@@ -23,14 +23,7 @@ if !exists('g:bujoIndexIncludeBacklog ')     | let g:bujoIndexIncludeBacklog  = 
 if !exists('g:bujoBacklogHeader')            | let g:bujoBacklogHeader =  "# {journal} Backlog"         | endif
 if !exists('g:bujoFutureHeader')             | let g:bujoFutureHeader =  "# {journal} Future Log - %Y"  | endif
 if !exists('g:bujoMonthlyHeader')            | let g:bujoMonthlyHeader = "# %B %Y"                      | endif
-if !exists('g:bujoHabits')
-  let g:bujoHabits = [ 
-  \ {
-  \		"title":"Journal",
-  \		"cron":"* * * *"
-  \ },
-  \ ]
-endif
+if !exists('g:bujoHabits')                   | let g:bujoHabits = [ { "title":"Journal", "cron":"*" } ] | endif
 
 " Constants/ Enums
 let s:BUJONOTE    = "note"
