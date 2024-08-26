@@ -1,6 +1,4 @@
-call plug#begin()
-Plug 'junegunn/vader.vim'
-call plug#end()
+set runtimepath+=$PWD/vader
 filetype off
 let &runtimepath .= ','.expand('<sfile>:p:h:h')
 filetype plugin indent on
