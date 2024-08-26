@@ -441,8 +441,6 @@ function! s:init_future(year) abort
   endfor
 endfunction
 
-" FIXME - Doesn't handle if no prefilled entry exists 
-" check if line == "" too
 function! s:list_insert_entry(list, type_header, type_list_char, entry, stop_pattern = v:null) abort
   let l:index = 1
   let l:list_char = a:type_list_char . " " 
@@ -461,15 +459,10 @@ function! s:list_insert_entry(list, type_header, type_list_char, entry, stop_pat
   " (leaving blank line below header)
   call insert(a:list, a:type_header, 2)
   call insert(a:list, l:list_char . a:entry, 3)
-  call insert(a:list, "", 5)
+  call insert(a:list, "", 4)
   return a:list
 endfunction
 
-" FIXME - Make notes actually append to either EOF 
-" or before next header
-" FIXME - Doesn't handle if no prefilled entry exists 
-" check if line == "" too
-" FIXME - Now adding lots of pre filled list entries
 function! s:list_append_entry(list, type_header, type_list_char, entry)  abort
   let l:index = 1
   let l:list_char = a:type_list_char . " " 
@@ -499,12 +492,9 @@ function! s:list_append_entry(list, type_header, type_list_char, entry)  abort
   " The only 'safe' way I can conceive to add this in is 
   " to locate todays header and insert it 3 lines below 
   " (leaving blank line below header)
-  let l:line = 2
-  call insert(a:list, a:type_header, l:line)
-  let l:line += 1
-  call insert(a:list, l:list_char . a:entry, l:line)
-  let l:line += 1
-  call insert(a:list, l:list_char, l:line)
+  call insert(a:list, a:type_header, 2)
+  call insert(a:list, l:list_char . a:entry, 3)
+  call insert(a:list, l:list_char, 4)
   return a:list
 endfunction
 
@@ -651,13 +641,7 @@ function! s:is_leap_year(year) abort
   return a:year % 400 == 0 || (a:year % 100 != 0 && a:year % 4 == 0)
 endfunction
 
-" 0 = Sunday
-" 1 = Monday
-" 2 = Tuesday
-" 3 = Wednesday
-" 4 = Thursday
-" 5 = Friday
-" 6 = Saturday
+" 0 = Sunday - 6 = Saturday
 function! s:get_week_day(year, month, day) abort
   " TODO - Ability to shift these aroud according to what day of the week you
   " want to start on
@@ -679,8 +663,6 @@ function! s:get_week_of_month(year,month,day) abort
   endif
 endfunction
 
-
-
 function! s:format_date_str(in, year, month, day) abort
   let l:month = a:month < 10 ? "0" . str2nr(a:month) : a:month
   let l:day = a:day < 10 ? "0" . str2nr(a:day) : a:day
@@ -692,10 +674,6 @@ function! s:format_date_str(in, year, month, day) abort
             \ "%w", l:week_of_month, "g"),
           \ "%m", l:month, "g"),
         \ "%Y", a:year, "g")
-endfunction
-
-" TODO #4
-function! s:fix_index_collection_links(journal) abort
 endfunction
 
 function! bujo#Head() abort
@@ -740,11 +718,6 @@ function! bujo#Journal(print_current, ...) abort
 
 endfunction
 
-" Paramaters: openJournal: bool, vaargs - each argument is joined in a string
-" to create the journal name
-" Description: Open the index file for a journal or index file of journals
-" Notes: Additional arguments are appended to the 'journal' argument with
-" spaces between
 function! bujo#Index(list_journals, ...) abort
   let l:journal = a:0 == 0 ? s:current_journal : join(a:000, " ")
   let l:journal_index = s:format_path(g:bujo_path,s:format_filename(l:journal), "/index.md")
@@ -769,25 +742,6 @@ function! bujo#Index(list_journals, ...) abort
     execute "edit " . fnameescape(l:journal_index)
   endif
 endfunction
-
-" TODO - Support migration
-" On initialising each week, get the last daily journal file (need to
-" support going on holiday for 2 weeks and coming back, should show last
-" daily log not not find the last weeks one)
-" This needs to (based on user choice v/h) split  showing past file and new
-" file, focus the old file, motions in this file migrate tasks accordingly
-" IMPORTANT: Only needs to show unfinished tasks
-" Motions: 
-"   getting it working: 
-"     `>>` move to new daily log
-"     `<<` prompt user for month and move to future log
-"     `tbd` move to backlog
-"   getting it working: 
-"     `>>` prompt for day (default to today) and put under that daily header
-"          in new daily log
-"     `<<` ability to specify year (will be needed when close to year end
-"          i.e. December) and need to put things in for new year
-"     `tbd` move to custom collection?
 
 function! s:outstanding_sort(a, b) abort
   let l:a_date = split(match(a:a, '[0-9]\{4}-[0-9]{1,2}-[0-9]{1,2}'), "-")
@@ -1260,11 +1214,7 @@ function! bujo#MonthlyEntry(type, ...) abort
 endfunction
 
 function! bujo#ListTasks(all_journals) abort
-  if a:all_journals
-    let l:journals = readdir(s:format_path(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f !~ "^[.]"})
-  else 
-    let l:journals = [s:current_journal]
-  endif
+  let l:journals = !a:all_journals ? [s:current_journal] : readdir(s:format_path(g:bujo_path), {f -> isdirectory(expand(g:bujo_path . f)) && f !~ "^[.]"})
 
   let l:content = [ "# Task List", "" ]
   for journal in l:journals 
@@ -1274,11 +1224,8 @@ function! bujo#ListTasks(all_journals) abort
     for collection in l:collections
       let l:file_content = readfile(s:format_path(g:bujo_path, journal, collection))
       let l:open_tasks = matchstrlist(l:file_content, '- \[ \] ..*')
-      if len(l:open_tasks) == 0
-        continue
-      endif
+      if len(l:open_tasks) == 0 | continue | endif
 
-      let l:has_tasks = v:true
       let l:formatted_collection_name = s:format_from_path(collection)
 
       call add(l:journal_content, "**" . l:formatted_collection_name . ":**")
