@@ -46,9 +46,9 @@ Execute (- Insert with no existing entries):
   \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
   \ ]
   
-  AssertEqual list_after_event, bujo#Vader_ListInsertEntry(InitEmptyList(), g:event_header, g:event_list_char, vader_test_entry), "Failed inserting event.\nExpected:\n['" . join(list_after_event, "', '") . "']\nbut got:\n['" . join(bujo#Vader_ListInsertEntry(InitEmptyList(), g:event_header, g:event_list_char, vader_test_entry), "', '") . "']"
-  AssertEqual list_after_task, bujo#Vader_ListInsertEntry(InitEmptyList(), g:task_header, g:task_list_char, vader_test_entry), "Failed inserting task.\nExpected:\n['" . join(list_after_task, "', '") . "']\nbut got:\n['" . join(bujo#Vader_ListInsertEntry(InitEmptyList(), g:task_header, g:task_list_char, vader_test_entry), "', '") . "']"
-  AssertEqual list_after_note, bujo#Vader_ListInsertEntry(InitEmptyList(), g:note_header, g:note_list_char, vader_test_entry), "Failed inserting note.\nExpected:\n['" . join(list_after_note, "', '") . "']\nbut got:\n['" . join(bujo#Vader_ListInsertEntry(InitEmptyList(), g:note_header, g:note_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_after_event, bujo#VaderCall("s:list_insert_entry",InitEmptyList(), g:event_header, g:event_list_char, vader_test_entry), "Failed inserting event.\nExpected:\n['" . join(list_after_event, "', '") . "']\nbut got:\n['" . join(bujo#VaderCall("s:list_insert_entry",InitEmptyList(), g:event_header, g:event_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_after_task, bujo#VaderCall("s:list_insert_entry",InitEmptyList(), g:task_header, g:task_list_char, vader_test_entry), "Failed inserting task.\nExpected:\n['" . join(list_after_task, "', '") . "']\nbut got:\n['" . join(bujo#VaderCall("s:list_insert_entry",InitEmptyList(), g:task_header, g:task_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_after_note, bujo#VaderCall("s:list_insert_entry",InitEmptyList(), g:note_header, g:note_list_char, vader_test_entry), "Failed inserting note.\nExpected:\n['" . join(list_after_note, "', '") . "']\nbut got:\n['" . join(bujo#VaderCall("s:list_insert_entry",InitEmptyList(), g:note_header, g:note_list_char, vader_test_entry), "', '") . "']"
 
 
 Execute (- Insert with existing entries):
@@ -109,9 +109,9 @@ Execute (- Insert with existing entries):
   \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
   \ ]
 
-  AssertEqual list_after_event, bujo#Vader_ListInsertEntry(InitPopulatedList(), g:event_header, g:event_list_char, vader_test_entry), "Failed inserting event.\nExpected:\n['" . join(list_after_event, "', '") . "']\nbut got:\n['" . join(bujo#Vader_ListInsertEntry(InitPopulatedList(), g:event_header, g:event_list_char, vader_test_entry), "', '") . "']"
-  AssertEqual list_after_task, bujo#Vader_ListInsertEntry(InitPopulatedList(), g:task_header, g:task_list_char, vader_test_entry), "Failed inserting task.\nExpected:\n['" . join(list_after_task, "', '") . "']\nbut got:\n['" . join(bujo#Vader_ListInsertEntry(InitPopulatedList(), g:task_header, g:task_list_char, vader_test_entry), "', '") . "']"
-  AssertEqual list_after_note, bujo#Vader_ListInsertEntry(InitPopulatedList(), g:note_header, g:note_list_char, vader_test_entry), "Failed inserting note.\nExpected:\n['" . join(list_after_note, "', '") . "']\nbut got:\n['" . join(bujo#Vader_ListInsertEntry(InitPopulatedList(), g:note_header, g:note_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_after_event, bujo#VaderCall("s:list_insert_entry",InitPopulatedList(), g:event_header, g:event_list_char, vader_test_entry), "Failed inserting event.\nExpected:\n['" . join(list_after_event, "', '") . "']\nbut got:\n['" . join(bujo#VaderCall("s:list_insert_entry",InitPopulatedList(), g:event_header, g:event_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_after_task, bujo#VaderCall("s:list_insert_entry",InitPopulatedList(), g:task_header, g:task_list_char, vader_test_entry), "Failed inserting task.\nExpected:\n['" . join(list_after_task, "', '") . "']\nbut got:\n['" . join(bujo#VaderCall("s:list_insert_entry",InitPopulatedList(), g:task_header, g:task_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_after_note, bujo#VaderCall("s:list_insert_entry",InitPopulatedList(), g:note_header, g:note_list_char, vader_test_entry), "Failed inserting note.\nExpected:\n['" . join(list_after_note, "', '") . "']\nbut got:\n['" . join(bujo#VaderCall("s:list_insert_entry",InitPopulatedList(), g:note_header, g:note_list_char, vader_test_entry), "', '") . "']"
 
 
 Execute (- Insert with entry type header missing):
@@ -178,10 +178,10 @@ Execute (- Insert with entry type header missing):
   \ (g:note_list_char == "" ? "" : g:note_list_char . " "),
   \ ]
 
-  AssertEqual list_a_after_event, bujo#Vader_ListInsertEntry(InitMissingHeaderListA(), g:event_header, g:event_list_char, vader_test_entry), "Failed inserting event to list A.\nExpected:\n['" . join(list_a_after_event, "', '") . "']\nbut got:\n['" . join(bujo#Vader_ListInsertEntry(InitMissingHeaderListA(), g:event_header, g:event_list_char, vader_test_entry), "', '") . "']"
-  AssertEqual list_b_after_event, bujo#Vader_ListInsertEntry(InitMissingHeaderListB(), g:event_header, g:event_list_char, vader_test_entry), "Failed inserting event to list B.\nExpected:\n['" . join(list_b_after_event, "', '") . "']\nbut got:\n['" . join(bujo#Vader_ListInsertEntry(InitMissingHeaderListB(), g:event_header, g:event_list_char, vader_test_entry), "', '") . "']"
-  AssertEqual list_a_after_task, bujo#Vader_ListInsertEntry(InitMissingHeaderListA(), g:task_header, g:task_list_char, vader_test_entry), "Failed inserting task to list A.\nExpected:\n['" . join(list_a_after_task, "', '") . "']\nbut got:\n['" . join(bujo#Vader_ListInsertEntry(InitMissingHeaderListA(), g:task_header, g:task_list_char, vader_test_entry), "', '") . "']"
-  AssertEqual list_b_after_task, bujo#Vader_ListInsertEntry(InitMissingHeaderListB(), g:task_header, g:task_list_char, vader_test_entry), "Failed inserting task to list B.\nExpected:\n['" . join(list_b_after_task, "', '") . "']\nbut got:\n['" . join(bujo#Vader_ListInsertEntry(InitMissingHeaderListB(), g:task_header, g:task_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_a_after_event, bujo#VaderCall("s:list_insert_entry",InitMissingHeaderListA(), g:event_header, g:event_list_char, vader_test_entry), "Failed inserting event to list A.\nExpected:\n['" . join(list_a_after_event, "', '") . "']\nbut got:\n['" . join(bujo#VaderCall("s:list_insert_entry",InitMissingHeaderListA(), g:event_header, g:event_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_b_after_event, bujo#VaderCall("s:list_insert_entry",InitMissingHeaderListB(), g:event_header, g:event_list_char, vader_test_entry), "Failed inserting event to list B.\nExpected:\n['" . join(list_b_after_event, "', '") . "']\nbut got:\n['" . join(bujo#VaderCall("s:list_insert_entry",InitMissingHeaderListB(), g:event_header, g:event_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_a_after_task, bujo#VaderCall("s:list_insert_entry",InitMissingHeaderListA(), g:task_header, g:task_list_char, vader_test_entry), "Failed inserting task to list A.\nExpected:\n['" . join(list_a_after_task, "', '") . "']\nbut got:\n['" . join(bujo#VaderCall("s:list_insert_entry",InitMissingHeaderListA(), g:task_header, g:task_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_b_after_task, bujo#VaderCall("s:list_insert_entry",InitMissingHeaderListB(), g:task_header, g:task_list_char, vader_test_entry), "Failed inserting task to list B.\nExpected:\n['" . join(list_b_after_task, "', '") . "']\nbut got:\n['" . join(bujo#VaderCall("s:list_insert_entry",InitMissingHeaderListB(), g:task_header, g:task_list_char, vader_test_entry), "', '") . "']"
 
 Execute (- Insert with all headers missing):
   let vader_test_entry = "Vader Test Entry"
@@ -203,5 +203,5 @@ Execute (- Insert with all headers missing):
   \ g:task_list_char . " ",
   \ "",
   \ ]
-  AssertEqual list_after_event, bujo#Vader_ListInsertEntry(InitEmptyListNoHeaders(), g:event_header, g:event_list_char, vader_test_entry), "Failed inserting event.\nExpected:\n['" . join(list_after_event, "', '") . "']\nbut got:\n['" . join(bujo#Vader_ListInsertEntry(InitEmptyListNoHeaders(), g:event_header, g:event_list_char, vader_test_entry), "', '") . "']"
-  AssertEqual list_after_task, bujo#Vader_ListInsertEntry(InitEmptyListNoHeaders(), g:task_header, g:task_list_char, vader_test_entry), "Failed inserting task.\nExpected:\n['" . join(list_after_task, "', '") . "']\nbut got:\n['" . join(bujo#Vader_ListInsertEntry(InitEmptyListNoHeaders(), g:task_header, g:task_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_after_event, bujo#VaderCall("s:list_insert_entry",InitEmptyListNoHeaders(), g:event_header, g:event_list_char, vader_test_entry), "Failed inserting event.\nExpected:\n['" . join(list_after_event, "', '") . "']\nbut got:\n['" . join(bujo#VaderCall("s:list_insert_entry",InitEmptyListNoHeaders(), g:event_header, g:event_list_char, vader_test_entry), "', '") . "']"
+  AssertEqual list_after_task, bujo#VaderCall("s:list_insert_entry",InitEmptyListNoHeaders(), g:task_header, g:task_list_char, vader_test_entry), "Failed inserting task.\nExpected:\n['" . join(list_after_task, "', '") . "']\nbut got:\n['" . join(bujo#VaderCall("s:list_insert_entry",InitEmptyListNoHeaders(), g:task_header, g:task_list_char, vader_test_entry), "', '") . "']"

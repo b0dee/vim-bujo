@@ -1302,40 +1302,10 @@ function! bujo#ListTasks(all_journals) abort
   setlocal readonly nomodifiable
 endfunction
 
-function! bujo#FormatFromPath(journal, collection = "index.md") abort
-  return s:format_from_path(a:journal, a:collection)
-endfunction
-
 function! bujo#GetInternalVariable(var) abort
   return get(s:, a:var, "Failed to find " . a:var . " in s:")
 endfunction
 
-" Global wrappers made so Vader can run unit tests
-function! bujo#Vader_FormatFilename(filename) abort
-  return s:format_filename(a:filename)
+function! bujo#VaderCall(funcname, ...) abort
+  return call(a:funcname, a:000)
 endfunction
-
-function! bujo#Vader_FormatHeader(header, journal = s:current_journal)  abort
-  call s:format_header(a:header, a:journal) 
-endfunction
-
-function! bujo#Vader_MkdirIfNeeded(journal = g:bujo_default_journal) abort
-  return s:mkdir_if_needed(a:journal)
-endfunction
-
-function! bujo#Vader_ListInsertEntry(list, type_header, type_list_char, entry, stop_pattern = v:null) abort
-  return s:list_insert_entry(a:list, a:type_header, a:type_list_char, a:entry, a:stop_pattern)
-endfunction
-
-function! bujo#Vader_ListAppendEntry(list, type_header, type_list_char, entry)  abort
-  return s:list_append_entry(a:list, a:type_header, a:type_list_char, a:entry) 
-endfunction
-
-function! bujo#Vader_GetJournalPath(journal = g:bujo_default_journal) abort
-  return s:format_path(expand(g:bujo_path), s:format_filename(a:journal))
-endfunction
-
-function! bujo#Vader_IsCollection(journal, collection)  abort
-	return s:is_collection(a:journal, a:collection)
-endfunction
-

@@ -1,44 +1,44 @@
 Execute (Starting Unit: format_filename):
 
 Execute (- format_filename base case (no changes needed)):
-  AssertEqual "vader.md", bujo#Vader_FormatFilename("vader.md")
+  AssertEqual "vader.md", bujo#VaderCall("s:format_filename","vader.md")
 
 Execute (- format_filename convert capitals to lower case):
-  AssertEqual "vader.md", bujo#Vader_FormatFilename("VADER.md")
+  AssertEqual "vader.md", bujo#VaderCall("s:format_filename","VADER.md")
 
 Execute (- format_filename replace spaces with underscores):
-  AssertEqual "vader_spaces.md", bujo#Vader_FormatFilename("vader spaces.md")
+  AssertEqual "vader_spaces.md", bujo#VaderCall("s:format_filename","vader spaces.md")
 
 Execute (- format_filename convert capitals and replace spaces):
-  AssertEqual "vader_spaces_and_capitals.md", bujo#Vader_FormatFilename("vader spaces and CAPITALS.md")
+  AssertEqual "vader_spaces_and_capitals.md", bujo#VaderCall("s:format_filename","vader spaces and CAPITALS.md")
 
 Execute (- format_filename format dates):
-  AssertEqual "vader_" . strftime("%Y") . ".md", bujo#Vader_FormatFilename('vader_%Y.md')
-  AssertEqual "vader_" . strftime("%m") . ".md", bujo#Vader_FormatFilename('vader_%m.md')
-  AssertEqual "vader_" . strftime("%d") . ".md", bujo#Vader_FormatFilename('vader_%d.md')
-  AssertEqual "vader_" . strftime("%Y-%m-%d") . ".md", bujo#Vader_FormatFilename('vader_%Y-%m-%d.md')
+  AssertEqual "vader_" . strftime("%Y") . ".md", bujo#VaderCall("s:format_filename",'vader_%Y.md')
+  AssertEqual "vader_" . strftime("%m") . ".md", bujo#VaderCall("s:format_filename",'vader_%m.md')
+  AssertEqual "vader_" . strftime("%d") . ".md", bujo#VaderCall("s:format_filename",'vader_%d.md')
+  AssertEqual "vader_" . strftime("%Y-%m-%d") . ".md", bujo#VaderCall("s:format_filename",'vader_%Y-%m-%d.md')
 
 Execute (- format_filename replace special characters):
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special!.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special".md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special£.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special$.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special%.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special^.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special&.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special*.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special;.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special:.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special''.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special>.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special<.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special\.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special/.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special|.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special,.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special!"£$%^&*;:''><\/|,.md')
-  AssertEqual "vader_special.md", bujo#Vader_FormatFilename('vader_special!"$£%&^*:;''<>/\,|.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special!.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special".md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special£.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special$.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special%.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special^.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special&.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special*.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special;.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special:.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special''.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special>.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special<.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special\.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special/.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special|.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special,.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special!"£$%^&*;:''><\/|,.md')
+  AssertEqual "vader_special.md", bujo#VaderCall("s:format_filename",'vader_special!"$£%&^*:;''<>/\,|.md')
 
 Execute (- TODO format_filename trim surrounding whitespace):
-  AssertEqual "vader", bujo#Vader_FormatFilename("vader ")
-  AssertEqual "vader.md", bujo#Vader_FormatFilename(" vader.md")
+  AssertEqual "vader", bujo#VaderCall("s:format_filename","vader ")
+  AssertEqual "vader.md", bujo#VaderCall("s:format_filename"," vader.md")
