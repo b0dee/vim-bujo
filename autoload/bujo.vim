@@ -23,7 +23,14 @@ if !exists('g:bujoIndexIncludeBacklog ')     | let g:bujoIndexIncludeBacklog  = 
 if !exists('g:bujoBacklogHeader')            | let g:bujoBacklogHeader =  "# {journal} Backlog"         | endif
 if !exists('g:bujoFutureHeader')             | let g:bujoFutureHeader =  "# {journal} Future Log - %Y"  | endif
 if !exists('g:bujoMonthlyHeader')            | let g:bujoMonthlyHeader = "# %B %Y"                      | endif
-
+if !exists('g:bujoHabits')
+  let g:bujoHabits = [ 
+  \ {
+  \		"title":"Journal",
+  \		"cron":"* * * *"
+  \ },
+  \ ]
+endif
 
 " Constants/ Enums
 let s:BUJONOTE    = "note"
@@ -249,7 +256,7 @@ function! s:formatFromPath(journal, collection = "index.md") abort
 endfunction
 
 function! s:listJournals() abort
-	return readdir(expand(g:bujoPath), {f -> isdirectory(expand(g:bujoPath . f)) && f !~ "^[.]"})
+	return readdir(expand(g:bujoPath), {f -> isdirectory(s:formatPath(g:bujoPath, f)) && f !~ "^[.]"})
 endfunction
 
 " mkdirIfNeeded
@@ -1044,14 +1051,6 @@ function! bujo#Backlog(...) abort
     call writefile(s:listAppendEntry(l:content, s:bujoHeaderEntries[s:BUJOTASK]["header"], s:bujoHeaderEntries[s:BUJOTASK]["listChar"],  l:entry), l:backlog)
   endif
 endfunction
-
-" Object Structure
-" let g:bujoHabits = [ 
-" \ {
-" \		"title":"Example",
-" \		"cron":"* * * *"
-" \ },
-" \ ]
 
 function! s:initMonthly(month) abort
   let l:monthlyLog = s:formatPath(g:bujoPath, s:currentJournal, s:formatHeaderCustomDate(s:bujoMonthlyFilename, s:getCurrentYear(), a:month, 1))
