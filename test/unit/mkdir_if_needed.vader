@@ -1,31 +1,34 @@
 Execute (Start Unit: mkdir_if_needed):
+    function GetJournalPath(journal) abort
+        return bujo#VaderCall("s:format_path", g:bujo_path, a:journal)
+    endfunction
 
 Execute (- Using default journal directory):
-    call bujo#Vader_MkdirIfNeeded()
-    Assert isdirectory(bujo#Vader_GetJournalPath())
-    call delete(bujo#Vader_GetJournalPath() , "rf")
-    Assert !isdirectory(bujo#Vader_GetJournalPath() ), "Failed to delete test directory"
+    call bujo#VaderCall("s:mkdir_if_needed", bujo#GetInternalVariable("current_journal"))
+    Assert isdirectory(GetJournalPath(bujo#GetInternalVariable("current_journal")))
+    call delete(GetJournalPath(GetJournalPath(bujo#GetInternalVariable("current_journal"))) , "rf")
+    Assert !isdirectory(GetJournalPath(GetJournalPath(bujo#GetInternalVariable("current_journal")))), "Failed to delete test directory"
 
 Execute (- Using uppercase journal name):
-    call bujo#Vader_MkdirIfNeeded("VADER_UPPERCASE")
-    Assert isdirectory(bujo#Vader_GetJournalPath("VADER_UPPERCASE"))
-    call delete(bujo#Vader_GetJournalPath("VADER_UPPERCASE"), "rf")
-    Assert !isdirectory(bujo#Vader_GetJournalPath("VADER_UPPERCASE")), "Failed to delete test directory"
+    call bujo#VaderCall("s:mkdir_if_needed","VADER_UPPERCASE")
+    Assert isdirectory(GetJournalPath("vader_uppercase")), "Folder not created: " . GetJournalPath("VADER_UPPERCASE")
+    call delete(GetJournalPath("vader_uppercase"), "rf")
+    Assert !isdirectory(GetJournalPath("vader_uppercase")), "Failed to delete test directory"
 
 Execute (- Using special characters):
-    call bujo#Vader_MkdirIfNeeded('VADER_SPECIAL!"£$%^&*()\|,<>/?;''[]"/')
-    Assert isdirectory(bujo#Vader_GetJournalPath("VADER_SPECIAL"))
-    call delete(bujo#Vader_GetJournalPath("VADER_SPECIAL"), "rf")
-    Assert !isdirectory(bujo#Vader_GetJournalPath("VADER_SPECIAL")), "Failed to delete test directory"
+    call bujo#VaderCall("s:mkdir_if_needed",'VADER_SPECIAL!"£$%^&*()\|,<>/?;''[]"/')
+    Assert isdirectory(GetJournalPath("vader_special"))
+    call delete(GetJournalPath("vader_special"), "rf")
+    Assert !isdirectory(GetJournalPath("vader_special")), "Failed to delete test directory"
     
 Execute (- Using space character):
-    call bujo#Vader_MkdirIfNeeded("VADER SPACES")
-    Assert isdirectory(bujo#Vader_GetJournalPath("VADER SPACES"))
-    call delete(bujo#Vader_GetJournalPath("VADER SPACES"), "rf")
-    Assert !isdirectory(bujo#Vader_GetJournalPath("VADER SPACES")), "Failed to delete test directory"
+    call bujo#VaderCall("s:mkdir_if_needed","VADER spaces")
+    Assert isdirectory(GetJournalPath("vader_spaces"))
+    call delete(GetJournalPath("vader_spaces"), "rf")
+    Assert !isdirectory(GetJournalPath("vader_spaces")), "Failed to delete test directory"
     
 Execute (- Abort creation): 
     let g:bujo_vader_mkdir_choice = 0
-    call bujo#Vader_MkdirIfNeeded("VADER THROWS")
+    call bujo#VaderCall("s:mkdir_if_needed","VADER THROWS")
     let g:bujo_vader_mkdir_choice = 1
-    Assert !isdirectory(bujo#Vader_GetJournalPath("VADER THROWS")), "Created directory when it should have aborted"
+    Assert !isdirectory(GetJournalPath("vader_throws")), "Created directory when it should have aborted"

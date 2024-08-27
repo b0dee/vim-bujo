@@ -2,6 +2,7 @@
 
 Execute (Set variables for test execution):
   let g:bujo_default_journal = "Vader"
+  let g:bujo_path = "~/bujo-test"
   let g:bujo_vader_testing = v:true
   let g:bujo_vader_mkdir_choice = 1
 
