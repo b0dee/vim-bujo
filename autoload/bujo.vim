@@ -316,7 +316,7 @@ function! s:getActiveHabits(year,month,day) abort
   let l:habits = []
   for header in g:bujoHabits
     let l:cronExpr = header["cron"]
-    if s:processCron(l:cronExpr, a:year, a:month, a:day, s:getWeekDay(a:year, a:month, a:day))
+    if s:processCron(l:cronExpr, a:year, a:month, a:day)
       call add(l:habits, "- [ ] " . header["title"])
     endif
   endfor
@@ -546,7 +546,8 @@ function! s:processCronInterval(interval) abort
   return l:arr
 endfunction
 
-function! s:processCron(expr, year, month, day, dow) abort
+function! s:processCron(expr, year, month, day) abort
+  let l:dow = s:getWeekDay(a:year,a:month,a:day)
   " TODO - This doesn't handle division styling
   " i.e. */2 for every other day 
   " need to reread up on cron again before doing any more tho
@@ -1100,7 +1101,7 @@ function! s:initMonthly(month) abort
       for header in g:bujoHabits
         let l:padding = ((len(header["title"]) + 2) / 2) - (len(l:emptyCheckbox) / 2)
         let l:cronExpr = header["cron"]
-        if s:processCron(l:cronExpr, s:getCurrentYear(), a:month, day, s:getWeekDay(s:getCurrentYear(), a:month, day))
+        if s:processCron(l:cronExpr, s:getCurrentYear(), a:month, day)
           let l:cellContent = l:emptyCheckbox 
         else
           let l:cellContent = repeat(" ", len(l:emptyCheckbox))
