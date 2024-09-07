@@ -312,11 +312,28 @@ function! s:getEntriesFromBlock(block, date) abort
   return l:entries
 endfunction
 
-function! s:generateDailyContent(year,month,day) abort
+function! s:getActiveHabits(year,month,day) abort
+  let l:habits = []
+  for header in g:bujoHabits
+    let l:cronExpr = header["cron"]
+    if s:processCron(l:cronExpr, a:year, a:month, a:day, s:getWeekDay(a:year, a:month, a:day))
+      call add(l:habits, "- [ ] " . header["title"])
+    endif
+  endfor
+  return l:habits
+endfunction
+
+function! s:populateDailyEntries(year,month,day) abort
   let l:monthlyEntries = s:getMonthlyLogEntries(a:year, a:month)
-  let l:dayHeader = s:formatHeaderCustomDate(s:bujoDailyHeader, a:year, a:month, a:day)
-  let l:content = [l:dayHeader, ""]
   let l:entries = s:getEntriesFromBlock(l:monthlyEntries, a:day)
+  let l:entries[s:BUJOTASK] = extend(s:getActiveHabits(a:year, a:month, a:day), l:entries[s:BUJOTASK])
+  return l:entries
+endfunction
+
+function! s:generateDailyContent(year,month,day) abort
+  let l:dayHeader = s:formatHeaderCustomDate(s:bujoDailyHeader, a:year, a:month, a:day)
+  let l:entries = s:populateDailyEntries(a:year, a:month, a:day)
+  let l:content = [l:dayHeader, ""]
   for key in g:bujoHeaderEntriesOrdered
     call add(l:content, s:bujoHeaderEntries[key]["header"])
     call extend(l:content, l:entries[key])
@@ -536,7 +553,7 @@ function! s:processCron(expr, year, month, day, dow) abort
   " Day Month Year DayOfWeek
   let l:exprList = split(a:expr, " ")
   if len(l:exprList) < 4 
-    call (extend(l:exprList, repeat(["*"], 4 - len(l:exprList))))
+    call extend(l:exprList, repeat(["*"], 4 - len(l:exprList)))
   endif
   let l:days   = s:processCronInterval(l:exprList[0])
   let l:months = s:processCronInterval(l:exprList[1])
