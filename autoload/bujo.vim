@@ -353,8 +353,6 @@ function! s:initDaily() abort
   let l:content = s:generateDailyContent(s:getCurrentYear(), s:getCurrentMonth(), s:getCurrentDay())
   " Write output to file
   call writefile(l:content, l:dailyLog)
-  call bujo#Outstanding()
-  execute "wincmd w"
 endfunction
 
 function! s:initFuture(year) abort
@@ -740,6 +738,9 @@ function! bujo#Today() abort
   " if !l:logExists && g:bujoAutoReflection
   "   return bujo#Migration()
   " endif
+
+  call bujo#Outstanding()
+  execute "wincmd w"
 
   call s:initDaily()
 
